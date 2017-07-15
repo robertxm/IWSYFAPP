@@ -1,0 +1,74 @@
+<ion-header>
+
+  <ion-navbar>
+    <ion-title>{{buildingname}}{{roomname}}</ion-title>
+  </ion-navbar>
+
+</ion-header>
+
+<ion-content padding >
+  图例：
+  <div style="background-color:blueviolet;width:12px;height:12px;border-radius:6px;display:inline-block;"></div>待派单&nbsp;&nbsp;
+  <div style="background-color:red;width:12px;height:12px;border-radius:6px;display:inline-block;"></div>待整改&nbsp;&nbsp;
+  <div style="background-color:blue;width:12px;height:12px;border-radius:6px;display:inline-block;"></div>已整改&nbsp;&nbsp;
+  <div style="background-color:green;width:12px;height:12px;border-radius:6px;display:inline-block;"></div>已通过&nbsp;&nbsp;
+  <div style="background-color:#800080;color:#f4f4f4;display:inline-block;" (click)="listshowclick()">列表</div>
+  <p></p>
+  <!--<div style="width:100%;height:1px; background-color:aqua"></div>-->
+  <div id = "apartimg">
+  <div id="container" style="overflow:hidden; height:400px; border:solid 1px #cccccc;">
+    <div id="stage" (click)='stageClick($event)' style="width: 100%; height: 700px;background-size: contain;background-repeat: no-repeat; position:relative;"></div>
+  </div>
+  <p></p>
+  <div style="width:100%; background-color:#EEEEEE">
+    <p><span id="statusMessage">提示：点击户型图可新增问题</span> </p>
+    <p>点击坐标：<span id="clickX">x</span>,<span id="clickY">y</span></p>
+  </div>
+  </div>
+
+  <ion-list *ngIf="listview===true">
+		<ion-item *ngFor="let issue of issues" (click)="listclick(issue.id)">			
+			<ion-label>
+				<p>          
+					<span style="width:50%; display:inline-block;"> 
+            <div *ngIf="issue.status=='待派单'" style="background-color:blueviolet;width:12px;height:12px;border-radius:6px;display:inline-block;"></div> 
+            <div *ngIf="issue.status=='待整改'" style="background-color:red;width:12px;height:12px;border-radius:6px;display:inline-block;"></div>
+            <div *ngIf="issue.status=='已整改'" style="background-color:blue;width:12px;height:12px;border-radius:6px;display:inline-block;"></div>
+            <div *ngIf="issue.status=='已通过'" style="background-color:green;width:12px;height:12px;border-radius:6px;display:inline-block;"></div>
+            <div *ngIf="issue.status=='已作废'" style="background-color:black;width:12px;height:12px;border-radius:6px;display:inline-block;"></div>
+            <div *ngIf="issue.status=='非正常关闭'" style="background-color:orange;width:12px;height:12px;border-radius:6px;display:inline-block;"></div>            
+          <h2>问题编号:{{issue.issueid}} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;   状态:{{issue.status}} </h2></span>
+					<span style="width:50%; display:inline-block; text-align:right; font-size:6px; color:white;">
+							<span style="background-color:blueviolet;border-radius:3px;" *ngIf="issue.overdays!=undefined && issue.overdays>0" >&nbsp;超时{{issue.overdays}}天&nbsp;</span>&nbsp;&nbsp;
+					<span style="background-color:orange;border-radius:3px;" *ngIf="issue.ReturnNum!=undefined && issue.ReturnNum>0">&nbsp;退{{issue.ReturnNum}}次&nbsp;</span>&nbsp;
+					</span>
+				</p>
+				<p>&nbsp;</p>
+				<h2>{{roomname}} : {{issue.position}} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  紧急程度: {{issue.UrgencyId}}</h2>
+				<h2>{{issue.checkitem}}: {{issue.IssueDesc}} {{issue.PlusDesc}}</h2>
+				<p><span style="width:50%; display: inline-block; ">工程师: {{issue.EngineerName}}  &nbsp;&nbsp;&nbsp;   负责人: {{issue.ResponsibleName}}</span><span style="width:50%; display: inline-block; text-align:right; ">&nbsp;整改时限：{{issue.duedate}}</span></p>
+			</ion-label>
+		</ion-item>
+	</ion-list>
+
+</ion-content>
+
+<ion-footer *ngIf="type == 3" >
+  <div *ngIf="readonly==false">
+  <table width="100%">
+    <tr>
+      <td width="130px">
+        <button ion-button color="danger" full (click)="doReject()">暂不收楼</button>
+      </td>
+      <td>
+        <button ion-button color="default" full (click)="doReceipt()">收楼</button>
+      </td>
+    </tr>
+  </table>
+  </div>
+  <div *ngIf="readonly">
+  <table width="100%">
+    <button ion-button color="default" full (click)="Receiptinfo()">交付信息</button>
+  </table>
+  </div>
+</ion-footer>

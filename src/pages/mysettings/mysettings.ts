@@ -1,0 +1,103 @@
+import { Component } from '@angular/core';
+import { NavController, NavParams } from 'ionic-angular';
+import { AboutPage } from '../about/about'
+import { Dialogs } from '@ionic-native/dialogs';
+import { LocalStorage } from '../../providers/local-storage';
+import { NativeService } from '../../providers/nativeservice';
+import { LoginPage } from '../login/login';
+import { initBaseDB } from '../../providers/initBaseDB';
+
+@Component({
+  selector: 'page-mysettings',
+  templateUrl: 'mysettings.html'
+})
+export class MysettingsPage {
+  username: string;
+  networkchecked: boolean;
+  first: boolean;
+  projname: string;
+  projnames: Array<string>;
+  projids: Array<string>;
+  versionids: Array<number>;  
+  needupds: Array<number>;
+  constructor(public navCtrl: NavController, private dialogs: Dialogs, public params: NavParams, public localStorage: LocalStorage, public initBaseDB: initBaseDB,
+             public nativeservice: NativeService) {
+    this.username = this.params.get('username');
+    this.first = false;
+  }
+  ngOnInit() {
+    this.localStorage.getItem('networkalways').then(val => {
+      this.networkchecked = !val;
+      if (this.networkchecked == false) {
+        this.first = true;
+      }
+    });
+    this.localStorage.getItem('curproj').then(val => {
+      this.projname = val.projname;
+    })
+    this.projnames = [];
+    this.projids = [];
+    this.versionids = [];
+    this.needupds = [];
+    this.initBaseDB.getProjVersion().then(val => {
+      let items: Array<any>;
+      items = val; 
+      console.log('items,'+val);
+      for (var i=0;i<items.length;i++){
+        console.log(items[i]);
+        this.projnames.push(items[i].projname);
+        this.projids.push(items[i].projid);
+        this.versionids.push(items[i].versionid);
+        this.needupds.push(items[i].needupd);
+      }      
+    })
+  }
+  networkchange(event) {
+      console.log(event.checked);
+      console.log(this.networkchecked);
+      this.networkchecked = event.checked;
+      this.localStorage.setItem('networkalways', this.networkchecked);
+      this.nativeservice.showToast("设置成功");
+  }
+  
+  projchange(event) {
+    let i = this.projnames.indexOf(this.projname, 0);
+    this.localStorage.setItem('curproj', { projid: this.projids[i], projname: this.projname, versionid:this.versionids[i], needupd:this.needupds[i] }).then(val => {
+      this.localStorage.getItem('curuser').then(v=>{
+        this.initBaseDB.checkandupdprojversion(this.projids[i],v.token,this.versionids[i]).then(v=>{
+          this.nativeservice.showToast("设置成功");
+        })        
+      })      
+    }).catch(e => alert(e));
+  }
+
+  aboutclick() {
+    this.navCtrl.push(AboutPage);
+  }
+
+  logoutclick() {
+    this.dialogs.confirm('确定要退出吗?', '', ['确定','取消'])
+      .then(val => {
+        if (val = 1) {
+          this.localStorage.removeitem('curuser');
+          this.navCtrl.push(LoginPage);
+        }
+      })
+      .catch(e => console.log('Error displaying dialog', e));
+  }
+
+  clearcacheclick() {
+    this.dialogs.confirm('清除数据将清除您全部已下载的楼栋数据和未上传的问题数据。', '', ['放弃清除', '继续清除'])
+      .then(val => {
+        if (val = 2) {
+          //清除楼栋基础包、动态包
+          this.nativeservice.showLoading("清除中...",30000,false);
+          this.initBaseDB.cleardynamicData().then(v=>{
+             this.nativeservice.hideLoading();
+             this.nativeservice.showToast("清除完成.");
+          })
+        }
+      })
+      .catch(e => console.log('Error displaying dialog', e));
+  }
+}
