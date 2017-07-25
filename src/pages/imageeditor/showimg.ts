@@ -10,22 +10,22 @@ export class ShowimgPage {
 	constructor(public navCtrl: NavController,
 		public params: NavParams) {
         
-        let elements = document.querySelectorAll(".tabbar");
-		if (elements != null) {
-			Object.keys(elements).map((key) => {
-				elements[key].style.display = 'none';
-			});
-		}
+        // let elements = document.querySelectorAll(".tabbar");
+		// if (elements != null) {
+		// 	Object.keys(elements).map((key) => {
+		// 		elements[key].style.display = 'none';
+		// 	});
+		// }
 		this.url = this.params.get('imgdata');
 	}
 
 	ionViewWillLeave() {
-		let elements = document.querySelectorAll(".tabbar");
-		if (elements != null) {
-			Object.keys(elements).map((key) => {
-				elements[key].style.display = 'flex';
-			});
-		}
+		// let elements = document.querySelectorAll(".tabbar");
+		// if (elements != null) {
+		// 	Object.keys(elements).map((key) => {
+		// 		elements[key].style.display = 'flex';
+		// 	});
+		// }
 	}
 
 	hideBigImage() {

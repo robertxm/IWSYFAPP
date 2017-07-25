@@ -33,12 +33,12 @@ export class ImageEditorModal {
         this.imageSrc = navParams.get('imageSrc');
         this.drawcolor = '#ff0000';
         let val: any;
-		let elements = document.querySelectorAll(".tabbar");
-		if (elements != null) {
-			Object.keys(elements).map((key) => {
-				elements[key].style.display = 'none';
-			});
-		}		
+		// let elements = document.querySelectorAll(".tabbar");
+		// if (elements != null) {
+		// 	Object.keys(elements).map((key) => {
+		// 		elements[key].style.display = 'none';
+		// 	});
+		// }		
     }
 
     ionViewDidEnter() {        
@@ -157,11 +157,11 @@ export class ImageEditorModal {
 	}
 
     ionViewWillLeave() {
-		let elements = document.querySelectorAll(".tabbar");
-		if (elements != null) {
-			Object.keys(elements).map((key) => {
-				elements[key].style.display = 'flex';
-			});
-		}
+		// let elements = document.querySelectorAll(".tabbar");
+		// if (elements != null) {
+		// 	Object.keys(elements).map((key) => {
+		// 		elements[key].style.display = 'flex';
+		// 	});
+		// }
 	}
 }

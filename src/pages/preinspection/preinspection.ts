@@ -16,10 +16,10 @@ export class PreinspectionPage {
   
   constructor(public navCtrl: NavController, public alertCtrl: AlertController, public localStorage: LocalStorage, public initBaseDB: initBaseDB,
     public nativeservice: NativeService) {
-    
-    this.localStorage.getItem('buildings').then(
-      val => this.buildings = val
-    )
+    console.log("PreinspectionPage");
+    // this.localStorage.getItem('buildings').then(
+    //   val => this.buildings = val
+    // )
     //this.Buildings=["1号楼","2号楼","3号楼","4号楼","5号楼","6号楼","7号楼","8号楼","9号楼"];
   }
 

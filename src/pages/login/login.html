@@ -1,35 +1,51 @@
 <!--<ion-header>-->
-  <!--<ion-navbar>
+<!--<ion-navbar>
     <ion-title>iWS移动验房 登陆页面</ion-title>
   </ion-navbar>-->
-	
+
 <!--</ion-header>-->
 
-<ion-content>
+<ion-content>  
+  <!--<ion-img width="100%" height="{{imgheight}}" src="assets/img/login.jpg"></ion-img>-->
 
-	<!--<ion-img width="100%" height="{{imgheight}}" src="assets/img/login.jpg"></ion-img>-->
-	
   <ion-list>
- 
-	<ion-item>
-		<ion-img width="100%" height="{{imgheight}}" src="assets/img/login.jpg"></ion-img>
-	</ion-item>
 
-  <ion-item >
-    <ion-label color="primary">用户名</ion-label>
-    <ion-input type="text" placeholder="输入用户名" clearInput [(ngModel)]="userid"></ion-input>
-  </ion-item>
+    <ion-item>
+      <ion-img width="100%" height="{{imgheight}}" src="assets/img/login.jpg"></ion-img>
+    </ion-item>    
+   
+    <ion-item>
+      <ion-label color="primary">用户名</ion-label>
+      <ion-input type="text" placeholder="输入用户名" clearInput [(ngModel)]="userid"></ion-input>
+    </ion-item>
 
 
-  <ion-item >
-    <ion-label color="primary" fixed>密码</ion-label>
-    <ion-input type="password" placeholder="输入密码" clearInput [(ngModel)]="password"></ion-input>
-  </ion-item>
+    <ion-item>
+      <ion-label color="primary" fixed>密码</ion-label>
+      <ion-input type="password" placeholder="输入密码" clearInput [(ngModel)]="password"></ion-input>
+    </ion-item>
 
-	<ion-item>
-	<button ion-button block (click)="loginclick()" style="height:4em" >登陆</button>
-	</ion-item>
+    <ion-item>
+      <button ion-button block (click)="loginclick()" style="height:4em">登陆</button>
+    </ion-item>
 
   </ion-list>
-</ion-content>
+  <!--<table style="width:100%; text-align:center;">
+    <tr>
+      <td><span style="width:  12px;height: 12px;border-radius:6px;display:inline-block; background-color:blueviolet;"></span>待派单<br />(readycounts)</td>
+      <td><span style="width:  12px;height: 12px;border-radius:6px;display:inline-block; background-color:red;"></span>待整改<br />(readycounts)</td>
+      <td><span style="width:  12px;height: 12px;border-radius:6px;display:inline-block; background-color:blue;"></span>已整改<br />(readycounts)</td>
+      <td><span style="width:  12px;height: 12px;border-radius:6px;display:inline-block; background-color:green;"></span>已通过<br />(readycounts)</td>
+    </tr>
+  </table>
 
+  <ion-segment [(ngModel)]="icons" color="secondary">
+    <ion-segment-button value="camera" style="line-height:2rem;">
+      test<br /> November 5, 1955
+    </ion-segment-button>
+    <ion-segment-button value="bookmark" style="line-height:2rem;">
+      test<br /> November 5, 1955
+    </ion-segment-button>
+  </ion-segment>-->
+
+</ion-content>

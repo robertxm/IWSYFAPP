@@ -18,11 +18,13 @@ export class MysettingsPage {
   projname: string;
   projnames: Array<string>;
   projids: Array<string>;
-  versionids: Array<number>;  
+  versionids: Array<number>;
   needupds: Array<number>;
+  vendrole: boolean;
   constructor(public navCtrl: NavController, private dialogs: Dialogs, public params: NavParams, public localStorage: LocalStorage, public initBaseDB: initBaseDB,
-             public nativeservice: NativeService) {
+    public nativeservice: NativeService) {
     this.username = this.params.get('username');
+    this.vendrole = this.params.get('vendrole');
     this.first = false;
   }
   ngOnInit() {
@@ -41,33 +43,33 @@ export class MysettingsPage {
     this.needupds = [];
     this.initBaseDB.getProjVersion().then(val => {
       let items: Array<any>;
-      items = val; 
-      console.log('items,'+val);
-      for (var i=0;i<items.length;i++){
+      items = val;
+      console.log('items,' + val);
+      for (var i = 0; i < items.length; i++) {
         console.log(items[i]);
         this.projnames.push(items[i].projname);
         this.projids.push(items[i].projid);
         this.versionids.push(items[i].versionid);
         this.needupds.push(items[i].needupd);
-      }      
+      }
     })
   }
   networkchange(event) {
-      console.log(event.checked);
-      console.log(this.networkchecked);
-      this.networkchecked = event.checked;
-      this.localStorage.setItem('networkalways', this.networkchecked);
-      this.nativeservice.showToast("设置成功");
+    console.log(event.checked);
+    console.log(this.networkchecked);
+    this.networkchecked = event.checked;
+    this.localStorage.setItem('networkalways', this.networkchecked);
+    this.nativeservice.showToast("设置成功");
   }
-  
+
   projchange(event) {
     let i = this.projnames.indexOf(this.projname, 0);
-    this.localStorage.setItem('curproj', { projid: this.projids[i], projname: this.projname, versionid:this.versionids[i], needupd:this.needupds[i] }).then(val => {
-      this.localStorage.getItem('curuser').then(v=>{
-        this.initBaseDB.checkandupdprojversion(this.projids[i],v.token,this.versionids[i]).then(v=>{
+    this.localStorage.setItem('curproj', { projid: this.projids[i], projname: this.projname, versionid: this.versionids[i], needupd: this.needupds[i] }).then(val => {
+      this.localStorage.getItem('curuser').then(v => {
+        this.initBaseDB.checkandupdprojversion(this.projids[i], v.token, this.versionids[i], v.vendrole).then(v => {
           this.nativeservice.showToast("设置成功");
-        })        
-      })      
+        })
+      })
     }).catch(e => alert(e));
   }
 
@@ -76,10 +78,11 @@ export class MysettingsPage {
   }
 
   logoutclick() {
-    this.dialogs.confirm('确定要退出吗?', '', ['确定','取消'])
+    this.dialogs.confirm('确定要退出吗?', '', ['确定', '取消'])
       .then(val => {
         if (val = 1) {
           this.localStorage.removeitem('curuser');
+          this.localStorage.removeitem('curproj');
           this.navCtrl.push(LoginPage);
         }
       })
@@ -91,10 +94,13 @@ export class MysettingsPage {
       .then(val => {
         if (val = 2) {
           //清除楼栋基础包、动态包
-          this.nativeservice.showLoading("清除中...",30000,false);
-          this.initBaseDB.cleardynamicData().then(v=>{
-             this.nativeservice.hideLoading();
-             this.nativeservice.showToast("清除完成.");
+          this.nativeservice.showLoading("清除中...", 30000);
+          this.initBaseDB.cleardynamicData(this.vendrole).then(v => {
+            this.nativeservice.hideLoading();
+            this.nativeservice.showToast("清除完成.");
+          }).catch(e=>{
+            this.nativeservice.hideLoading();
+            console.log('清除失败')
           })
         }
       })

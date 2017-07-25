@@ -16,7 +16,7 @@
     </ion-item>
     <p></p>
     <p></p>    
-    <ion-item detail-push (click)="myteamclick()">
+    <ion-item *ngIf="vendrole" detail-push (click)="myteamclick()">
       <ion-icon ios="ios-contacts" md="md-contacts" item-left color="royal"></ion-icon>
       <h2>我的团队</h2>
     </ion-item>

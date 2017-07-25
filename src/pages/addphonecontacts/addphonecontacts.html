@@ -10,7 +10,7 @@
   <ion-list>
     <ion-item *ngFor="let item of items">    
     <h2>{{item.name}}  {{item.phone}}</h2>
-    <button *ngIf="item.added===false" ion-button clear item-right (click)="addclick(item)">{{item.btnname}}</button>
+    <button *ngIf="item.added===false" ion-button clear item-right (click)="addclick(item)" outline>{{item.btnname}}</button>
     <button *ngIf="item.added" ion-button clear item-right color='stable'>{{item.btnname}}</button>
   </ion-item>
   </ion-list>

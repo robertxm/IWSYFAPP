@@ -155,13 +155,7 @@ export class NativeService {
    * 统一调用此方法显示loading
    * @param content 显示的内容
    */
-  showLoading(content: string = '',timeout:number = 20000, connectflag:boolean = true): void {
-    if (connectflag) {
-       if (this.isConnecting() == false){
-         throw '无网络，无法更新数据';
-       }
-    }
-     
+  showLoading(content: string = '', timeout: number = 60000): void {
     if (!this.loadingIsOpen) {
       this.loadingIsOpen = true;
       this.loading = this.loadingCtrl.create({
@@ -334,36 +328,45 @@ export class NativeService {
    * 判断是否有网络
    * @returns {boolean}
    */
-  isConnecting(): boolean {
-
-    //this.platform.ready().then((readySource) => {
-    //  console.log('Platform ready from', readySource);
-    let networktype = this.getNetworkType();
-    if (networktype == 'none') {
-      this.showToast("目前无任务网络连接.");
-      return false;
-    }
-    if (networktype == 'wifi')
-      return true;
-    else {
-      this.dialogs.confirm('你正使用2g/3g/4g/网络，是否同意上传和下载?', '', ['不允许','同意'])
-        .then(val => {
-          if (val = 2)
-          {
-            this.localStorage.setItem('networkalways',true);
-            return true;
-          }            
-          else
-          {
-            this.localStorage.setItem('networkalways',false);
-            return false;
-          }            
-        })
-        .catch(e => console.log('Error displaying dialog', e));
-    }
-    //}).catch(e=>{
-    //  return false;
-    //})  
+  isConnecting(): Promise<boolean> {
+    return new Promise((resolve) => {
+      //this.platform.ready().then((readySource) => {
+      //  console.log('Platform ready from', readySource);
+      let promise = new Promise((resolve) => {
+        let networktype = this.getNetworkType();
+        resolve(networktype);
+      });
+      resolve(promise.then((networktype) => {
+        if (networktype == 'none') {
+          this.showToast("您的当前网络不可用,请检查您的网络设置.");
+          return false;
+        }
+        if (networktype == 'wifi')
+          return true;
+        else {
+          console.log("checknetwork");
+          this.dialogs.confirm('你正使用2g/3g/4g/网络，是否同意上传和下载?', '', ['不允许', '同意'])
+            .then(val => {
+              if (val = 2) {
+                console.log("ok checknetwork");
+                this.localStorage.setItem('networkalways', true);
+                return true;
+              }
+              else {
+                console.log("false checknetwork");
+                this.localStorage.setItem('networkalways', false);
+                return false;
+              }
+            })
+            .catch(e => { console.log('Error displaying dialog', e); return false });
+        }
+      }).then((v2) => {
+        return v2;
+      }).catch(err => {
+        this.warn('网路检测失败:' + err);
+        return false;
+      }))
+    })
   }
 
   /**

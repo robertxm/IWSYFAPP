@@ -7,6 +7,7 @@ import { ActionSheetController } from 'ionic-angular'
 import { AddmembermanualPage } from '../addmembermanual/addmembermanual';
 import { AddphonecontactsPage } from '../addphonecontacts/addphonecontacts';
 import { Contacts, Contact, ContactField, ContactName } from '@ionic-native/contacts';
+import { initBaseDB } from '../../providers/initBaseDB';
 
 @Component({
   selector: 'page-myteam',
@@ -17,24 +18,31 @@ export class MyTeamPage {
   userids: Array<string>;
   projid: string;
   constructor(public navCtrl: NavController, public localStorage: LocalStorage, public nativeservice: NativeService, public actionSheetCtrl: ActionSheetController,
-    private contacts: Contacts) {
-    this.teams = []; this.userids = [];
-    this.localStorage.getItem('curproj').then(val => {
-      this.projid = val.projid;
-      this.localStorage.getItem('myteam' + this.projid).then(val => {
-        let items: Array<any>;
-        items = val;
-        items.forEach(element => {
-          console.log(element);
-          this.teams.push(element.username + "    " + element.userid);
-          this.userids.push(element.userid);
-        });
-      })
-    })
+    public initBaseDB: initBaseDB, private contacts: Contacts) {
+    
   }
 
-  addclick() {
-    //this.navCtrl.push(AddteammemberPage);
+  ionViewDidEnter() {
+	  this.teams = []; this.userids = [];
+    this.localStorage.getItem('curproj').then(val => {
+      this.projid = val.projid;
+      this.initBaseDB.getProjTeam(this.projid).then(val => {
+        if (val) {
+            //{ userid: v2.rows.item(i).UserId, name: v2.rows.item(i).Name, phone: v2.rows.item(i).Phone }
+          let items: Array<any>;
+          items = val;
+          items.forEach(element => {
+            console.log(element);console.log(element.name);
+            this.teams.push(element.name + "    " + element.phone);
+            this.userids.push(element.phone);
+          });
+        }
+      })    
+    })
+	}
+
+
+  addclick() {    
     let actionSheet = this.actionSheetCtrl.create({
       title: '选择添加方式',
       buttons: [
@@ -89,9 +97,7 @@ export class MyTeamPage {
                 contacts.push({ name: contact.displayName, phone: phones[0].value, added: true, btnname: "已添加" });
             }
           }
-
         }
-
       });
       this.navCtrl.push(AddphonecontactsPage, { projid: this.projid, items: contacts });
     });

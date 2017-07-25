@@ -1,135 +1,75 @@
-
 <ion-header>
 
 	<ion-navbar>
-		<ion-title>前期交付</ion-title>
+		<ion-title>{{stage}}</ion-title>
 	</ion-navbar>
-	<ion-segment [(ngModel)]="selectedTab">
-		<ion-segment-button value="待指派">
-			<div style="background-color:purple ;width:12px;height:12px;border-radius:6px;display:inline-block;"></div>&nbsp;待指派
+	<ion-segment [(ngModel)]="selectedTab" (click)="selectAll=false;clearSelection();" style="padding:0; margin:0;text-align:center">
+		<ion-segment-button value="待派单" style="padding:0; margin:0;line-height:2rem;">
+			<div class="cyclediv pending"></div>待指派<br />({{asscounts}})
 		</ion-segment-button>
-		<ion-segment-button value="待整改">
-			<div style="background-color:red;width:12px;height:12px;border-radius:6px;display:inline-block;"></div>&nbsp;待指派
+		<ion-segment-button value="待整改" style="padding:0; margin:0;line-height:2rem;">
+			<div class="cyclediv assigned"></div>待整改<br />({{forfixcounts}})
 		</ion-segment-button>
-		<ion-segment-button value="已整改">
-			<div style="background-color:blue;width:12px;height:12px;border-radius:6px;display:inline-block;"></div>&nbsp;已整改
+		<ion-segment-button value="已整改" style="padding:0; margin:0;line-height:2rem;">
+			<div class="cyclediv processed"></div>已整改<br />({{fixedcounts}})
 		</ion-segment-button>
-		<ion-segment-button value="已通过">
-			<div style="background-color:chocolate;width:12px;height:12px;border-radius:6px;display:inline-block;"></div>&nbsp;被退回
+		<ion-segment-button value="被退回" style="padding:0; margin:0;line-height:2rem;">
+			<div class="cyclediv rejected"></div>被退回<br />({{returncounts}})
 		</ion-segment-button>
 	</ion-segment>
-
-	<table style="width:100%;">
+	<table style="width:100%;" *ngIf="selectedTab == '待整改' || selectedTab == '待派单'">
 		<tr>
 			<td>
-				<ion-item no-lines>
+				<ion-item no-lines style="font-size:1.3rem;">
 					<ion-label>全选</ion-label>
-					<ion-checkbox item-end  [(ngModel)]="selectAll"></ion-checkbox>
+					<ion-checkbox style="margin-right:9px;" [(ngModel)]="selectAll"></ion-checkbox>
 				</ion-item>
 			</td>
 			<td>
-				<button ion-button full color="light">导出问题</button>
+				<button ion-button full color="light" style="font-size:1.3rem; padding:0;" (click)="exportIssues()">导出问题</button>
 			</td>
 			<td>
-				<button ion-button full color="default">变更负责人</button>
+				<button ion-button full color="default" style="font-size:1.3rem; padding:0;" (click)="changeAssignto()">变更负责人</button>
 			</td>
-			<td>
-				<button ion-button full color="secondary">整改完成</button>
+			<td *ngIf="selectedTab == '待整改'">
+				<button ion-button full color="secondary" style="font-size:1.3rem; padding:0;" (click)="markCompleted()">整改完成</button>
 			</td>
 		</tr>
 	</table>
 </ion-header>
 <ion-content padding>
-	<ion-list>
-		<ion-item *ngFor="let issue of getIssues(selectedTab)">
-			<ion-checkbox checked = {{selectAll}}></ion-checkbox>
-			<ion-label>
-				<p>
-					<span style="width:50%; display:inline-block;">问题编号：{{issue.issueId}}</span>
-					<span style="width:50%; display:inline-block; text-align:right; font-size:6px; color:white;">
-							<span style="background-color:blueviolet;border-radius:3px;" *ngIf="issue.overdays!=undefined && issue.overdays>0" >&nbsp;超时{{issue.overdays}}天&nbsp;</span>&nbsp;&nbsp;
-					<span style="background-color:orange;border-radius:3px;" *ngIf="issue.returntimes!=undefined && issue.returntimes>0">&nbsp;退{{issue.returntimes}}次&nbsp;</span>&nbsp;
-					</span>
-				</p>
-				<p>&nbsp;</p>
-				<h2>{{issue.prjname}} - {{issue.buildingname}} : {{issue.roomname}}</h2>
-				<p>{{issue.catagory}}： {{issue.description}} </p>
-				<p><span style="width:50%; display: inline-block; ">负责人： {{issue.assigntoname}}</span><span style="width:50%; display: inline-block; text-align:right; ">&nbsp;整改时限：{{issue.duedate}}</span></p>
-			</ion-label>
-		</ion-item>
-	</ion-list>
-	<!--<ion-list [ngSwitch]="selectedTab">
-		<div *ngSwitchCase="'待指派'">
-			<ion-item *ngFor="let issue of getIssues(selectedTab)">
-				<ion-checkbox></ion-checkbox>
-				<ion-label>
-					<p>
-						<span style="width:50%; display:inline-block;">问题编号：{{issue.issueId}}</span>
-						<span style="width:50%; display:inline-block; text-align:right; font-size:6px; color:white;">
-							<span style="background-color:blueviolet;border-radius:3px;" *ngIf="issue.overdays!=undefined && issue.overdays>0" >&nbsp;超时{{issue.overdays}}天&nbsp;</span>&nbsp;&nbsp;
-						<span style="background-color:orange;border-radius:3px;" *ngIf="issue.returntimes!=undefined && issue.returntimes>0">&nbsp;退{{issue.returntimes}}次&nbsp;</span>&nbsp;
-						</span>
-					</p>
-					<p>&nbsp;</p>
-					<h2>{{issue.prjname}} - {{issue.buildingname}} : {{issue.roomname}}</h2>
-					<p>{{issue.catagory}}： {{issue.description}} </p>
-					<p><span style="width:50%; display: inline-block; ">负责人： {{issue.assigntoname}}</span><span style="width:50%; display: inline-block; text-align:right; ">&nbsp;整改时限：{{issue.duedate}}</span></p>
-				</ion-label>
-			</ion-item>
-		</div>
-		<div *ngSwitchCase="'待整改'">
-			<ion-item *ngFor="let issue of selectIssues('待整改')">
-				<ion-checkbox></ion-checkbox>
-				<ion-label>
-					<p>
-						<span style="width:50%; display:inline-block;">问题编号：{{issue.issueId}}</span>
-						<span style="width:50%; display:inline-block; text-align:right; font-size:6px; color:white;">
-							<span style="background-color:blueviolet;border-radius:3px;" *ngIf="issue.overdays!=undefined && issue.overdays>0" >&nbsp;超时{{issue.overdays}}天&nbsp;</span>&nbsp;&nbsp;
-						<span style="background-color:orange;border-radius:3px;" *ngIf="issue.returntimes!=undefined && issue.returntimes>0">&nbsp;退{{issue.returntimes}}次&nbsp;</span>&nbsp;
-						</span>
-					</p>
-					<p>&nbsp;</p>
-					<h2>{{issue.prjname}} - {{issue.buildingname}} : {{issue.roomname}}</h2>
-					<p>{{issue.catagory}}： {{issue.description}} </p>
-					<p><span style="width:50%; display: inline-block; ">负责人： {{issue.assigntoname}}</span><span style="width:50%; display: inline-block; text-align:right; ">&nbsp;整改时限：{{issue.duedate}}</span></p>
-				</ion-label>
-			</ion-item>
-		</div>
-		<div *ngSwitchCase="'已整改'">
-			<ion-item *ngFor="let issue of selectIssues('已整改')">
-				<ion-checkbox></ion-checkbox>
-				<ion-label>
-					<p>
-						<span style="width:50%; display:inline-block;">问题编号：{{issue.issueId}}</span>
-						<span style="width:50%; display:inline-block; text-align:right; font-size:6px; color:white;">
-							<span style="background-color:blueviolet;border-radius:3px;" *ngIf="issue.overdays!=undefined && issue.overdays>0" >&nbsp;超时{{issue.overdays}}天&nbsp;</span>&nbsp;&nbsp;
-						<span style="background-color:orange;border-radius:3px;" *ngIf="issue.returntimes!=undefined && issue.returntimes>0">&nbsp;退{{issue.returntimes}}次&nbsp;</span>&nbsp;
-						</span>
-					</p>
-					<p>&nbsp;</p>
-					<h2>{{issue.prjname}} - {{issue.buildingname}} : {{issue.roomname}}</h2>
-					<p>{{issue.catagory}}： {{issue.description}} </p>
-					<p><span style="width:50%; display: inline-block; ">负责人： {{issue.assigntoname}}</span><span style="width:50%; display: inline-block; text-align:right; ">&nbsp;整改时限：{{issue.duedate}}</span></p>
-				</ion-label>
-			</ion-item>
-		</div>
-		<div *ngSwitchCase="'被退回'">
-			<ion-item *ngFor="let issue of selectIssues('被退回')">
-				<ion-checkbox></ion-checkbox>
-				<ion-label>
-					<p>
-						<span style="width:50%; display:inline-block;">问题编号：{{issue.issueId}}</span>
-						<span style="width:50%; display:inline-block; text-align:right; font-size:6px; color:white;">
-							<span style="background-color:blueviolet;border-radius:3px;" *ngIf="issue.overdays!=undefined && issue.overdays>0" >&nbsp;超时{{issue.overdays}}天&nbsp;</span>&nbsp;&nbsp;
-						<span style="background-color:orange;border-radius:3px;" *ngIf="issue.returntimes!=undefined && issue.returntimes>0">&nbsp;退{{issue.returntimes}}次&nbsp;</span>&nbsp;
-						</span>
-					</p>
-					<p>&nbsp;</p>
-					<h2>{{issue.prjname}} - {{issue.buildingname}} : {{issue.roomname}}</h2>
-					<p>{{issue.catagory}}： {{issue.description}} </p>
-					<p><span style="width:50%; display: inline-block; ">负责人： {{issue.assigntoname}}</span><span style="width:50%; display: inline-block; text-align:right; ">&nbsp;整改时限：{{issue.duedate}}</span></p>
-				</ion-label>
-			</ion-item>
-		</div>
-	</ion-list>-->
+	<div *ngIf="needupd" style="background-color:blue; text-align:center; color:white"> 你当前有数据未更新,拖动可更新.</div>
+	<ion-refresher (ionRefresh)="doRefresh($event)">
+		<ion-refresher-content pullingIcon="arrow-dropdown" pullingText="下拉刷新..." refreshingSpinner="circles" refreshingText="开始加载......">
+		</ion-refresher-content>
+	</ion-refresher>
+	<table style="width:100%;">
+		<tr *ngFor="let issue of getIssues(selectedTab)" style="padding-left:0;">
+			<td>
+				<ion-checkbox style="margin-right:9px;" checked={{selectAll}} [(ngModel)]="issue.selected"></ion-checkbox>
+			</td>
+			<td (click)="showDetail(issue);" style="border-bottom:1px solid silver; border-top:1px solid silver; padding: 5px 0px 5px 0px; color:dimgray;">
+				<!--<p>-->
+				<table style="width:100%; font-size:8pt;">
+					<tr>
+						<td><span *ngIf="issue.status=='待派单'" style="background-color:purple;width:6px;height:6px;border-radius:2px;display:inline-block;"></span>
+							<span *ngIf="issue.status=='待整改'" style="background-color:red;width:6px;height:6px;border-radius:2px;display:inline-block;"></span>
+							<span *ngIf="issue.status=='已整改'" style="background-color:blue;width:6px;height:6px;border-radius:2px;display:inline-block;"></span>							
+							&nbsp;&nbsp;问题编号: {{issue.issueid}}</td>
+						<td style="text-align:right; color:white;"><span style="background-color:blueviolet;border-radius:3px;" *ngIf="issue.overdays!=undefined && issue.overdays>0">&nbsp;超时{{issue.overdays}}天&nbsp;</span>&nbsp;&nbsp;
+							<span style="background-color:orange;border-radius:3px;" *ngIf="issue.returntimes!=undefined && issue.returntimes>0">&nbsp;退{{issue.returntimes}}次&nbsp;</span></td>
+					</tr>
+				</table>
+				<br/>
+				<div style="font-size: 12pt; color:black;">{{issue.batchname}}&nbsp; 房间: {{issue.buildingname}}-{{issue.floorname}}-{{issue.roomname}}</div>
+				<div>问题:{{issue.position}}-{{issue.checkitem}}-{{issue.IssueDesc}} </div>
+				<table style="width:100%">
+					<tr>
+						<td>负责人: {{issue.ResponsibleName}}</td>
+						<td style="text-align:right;">{{issue.datestr}}: {{issue.date}}</td>
+					</tr>
+				</table>
+			</td>
+		</tr>
+	</table>
 </ion-content>

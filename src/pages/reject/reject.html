@@ -24,7 +24,7 @@
   <button ion-button clear (click)="showlogclick()">查看暂不收楼记录</button>
   <ion-list *ngIf="showlog">
     <ion-item *ngFor="let item of logs">
-      <h2>{{item.reason}}  {{item.plusdesc}}</h2> <h3></h3>      
+      <h2>{{item.date}} &nbsp;&nbsp; {{item.reason}} &nbsp;&nbsp; {{item.plusdesc}} &nbsp;&nbsp; </h2> <h3></h3>      
       <!--<p>I've had a pretty messed up day. If we just...</p>-->
     </ion-item>
   </ion-list>

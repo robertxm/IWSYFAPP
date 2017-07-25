@@ -12,10 +12,12 @@ import { MyTeamPage } from '../myteam/myteam';
 })
 export class MyPage {
   username: string;
+  vendrole: boolean;
   constructor(public navCtrl: NavController, public localStorage: LocalStorage) {
 
     this.localStorage.getItem('curuser').then(val => {
       this.username = val.username;
+      this.vendrole = val.vendrole;
     })    
   }
 
@@ -28,7 +30,7 @@ export class MyPage {
   }
 
   mysettingsclick() {
-    this.navCtrl.push(MysettingsPage, { username: this.username });
+    this.navCtrl.push(MysettingsPage, { username: this.username, vendrole:this.vendrole });
   }
    
   myteamclick() {

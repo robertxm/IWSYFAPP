@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, ElementRef, ViewChild } from '@angular/core';
 import { NavController, NavParams, ModalController } from 'ionic-angular';
 import { AlertController } from 'ionic-angular';
 import { Camera, CameraOptions } from '@ionic-native/camera';
@@ -14,6 +14,8 @@ import { initBaseDB } from '../../providers/initBaseDB';
 	templateUrl: 'issue.html'
 })
 export class IssuePage {
+	@ViewChild('issuedesc')
+	issuedescDiv: ElementRef;
 	roomname: string;
 	position: string;
 	positionid: string;
@@ -28,7 +30,7 @@ export class IssuePage {
 	resunitid: string;
 	positions: Array<string>;
 	checkitems: Array<any>;
-	checkitemids:Array<any>;
+	checkitemids: Array<any>;
 	itemdescs: Array<Array<string>>;
 	urgencylevel: Array<string>;
 	vendors: Array<any>;
@@ -53,10 +55,15 @@ export class IssuePage {
 	userid: string;
 	username: string;
 	type: number;
-	vendmanagers:Array<string>;
-    manager:string;
+	vendmanagers: Array<string>;
+	vendmanagernames: Array<string>;
+	vendmanagerphone: Array<string>;
+	manager: string;
+	managername: string;
+	managerphone: string;
+	timelimit: number;
 	constructor(public localStorage: LocalStorage, private camera: Camera, public navCtrl: NavController, public alertCtrl: AlertController, public initBaseDB: initBaseDB,
-		public params: NavParams, private nativeService: NativeService, private modalCtrl: ModalController) {
+		public params: NavParams, private nativeService: NativeService, private modalCtrl: ModalController, private elementRef: ElementRef) {
 		this.projid = this.params.get('projid');
 		this.buildingname = this.params.get('buildingname');
 		this.roomid = this.params.get('roomid');
@@ -71,7 +78,7 @@ export class IssuePage {
 		this.positions = [];
 		this.positionids = [];
 		areas.forEach(v => {
-			this.positions.push(v.name); //this.positions = ["厨房", "餐厅", "客厅", "阳台", "主卧", "次卧", "公用卫生间", "主卧卫生间"];
+			this.positions.push(v.name);
 			this.positionids.push(v.positionid);
 		})
 		console.log(this.positions);
@@ -81,16 +88,11 @@ export class IssuePage {
 		this.vendors = [];
 		this.vendids = [];
 		this.vendmanagers = [];
+		this.vendmanagernames = [];
+		this.vendmanagerphone = [];
 		this.responsibilityunits = [];
 		this.responsibilityunitids = [];
-		// this.checkitems = ["插座", "灯具(户内)", "多媒体箱", "给排水管(立管与支管)", "红外探测器", "开关", "空调百叶", "空调洞口", "空调机位", "楼板(顶棚、地面)", "门头石"];
-		// this.itemdescs = [["布局不合理", "高低不一致", "松动", "损伤", "歪斜", "位置不合理", "污染", "型号安装错误", "遗漏或数量少", "周边墙面凹凸、不平整"]
-		// 	, ["灯不亮", "灯具缺损", "灯具位置不合理", "数量不合理", "其他"]
-		// 	, ["部件缺失", "锁缺失", "箱门变形、损坏", "线路不通", "布线杂乱"]
-		// 	, ["出水不洁净", "给水管渗漏"]];
 		this.urgencylevel = ["一般", "紧急"];
-		// this.vendors = ["八达建设", "柏事特", "甲方", "盼盼安全门", "通力电梯", "维度化工"];
-		// this.responsibilityunit = ["八达建设", "柏事特", "甲方", "盼盼安全门", "通力电梯", "维度化工"];
 		this.images = [];
 		this.checkitem = '';
 		this.itdesc = '';
@@ -108,57 +110,129 @@ export class IssuePage {
 		if (this.position) {
 			this.positionid = this.positionids[this.positions.indexOf(this.position)];
 			this.initBaseDB.getcheckitem(this.projid, this.roomid, this.positionid).then(val => {
-				val.forEach(v=>{
-                  this.checkitems.push(v.name);
-				  this.checkitemids.push(v.id);
-				})				
+				val.forEach(v => {
+					this.checkitems.push(v.name);
+					this.checkitemids.push(v.id);
+				})
 			})
 		}
+	}
+
+	Cansubmit(): boolean {
+		if (this.positionid == '') {
+			alert('部位不能为空'); return false;
+		} else if (this.checkitem == "") {
+			alert('检查项不能为空'); return false;
+		} else if (this.itdesc == "") {
+			alert('描述不能为空'); return false;
+		} else if (this.vend == "") {
+			alert('承建商不能为空'); return false;
+		} else if (this.resunit == "") {
+			alert('责任单位不能为空'); return false;
+		}
+		return true;
 	}
 
 	positionchange() {
 		this.positionid = this.positionids[this.positions.indexOf(this.position)];
 		this.initBaseDB.getcheckitem(this.projid, this.roomid, this.positionid).then(val => {
 			console.log(val);
-			this.checkitems = [];this.checkitemids = [];
-			val.forEach(v=>{
-                  this.checkitems.push(v.name);
-				  this.checkitemids.push(v.id);
-				})	
+			this.checkitems = []; this.checkitemids = [];
+			val.forEach(v => {
+				this.checkitems.push(v.name);
+				this.checkitemids.push(v.id);
+			})
 		})
 	}
 
 	itemchange() {
-		this.checkitemid = this.checkitemids[this.checkitems.indexOf(this.checkitem,0)];
+		this.checkitemid = this.checkitemids[this.checkitems.indexOf(this.checkitem, 0)];
 		this.initBaseDB.getcheckitemdescvend(this.projid, this.roomid, this.checkitemid).then(val => {
 			console.log(val);
 			this.itemdescs = val[0];
-			this.responsibilityunits = [];this.responsibilityunitids = []; this.vendids = []; this.vendors = [];
-			val[1].forEach(v=>{
+			this.responsibilityunits = []; this.responsibilityunitids = []; this.vendids = []; this.vendors = [];
+			let i = 0;
+			val[1].forEach(v => {
 				this.responsibilityunits.push(v.name);
 				this.responsibilityunitids.push(v.id);
 				this.vendors.push(v.name);
 				this.vendids.push(v.id);
 				this.vendmanagers.push(v.manager);
+				this.vendmanagernames.push(v.managename);
+				this.vendmanagerphone.push(v.phone);
+				i++;
 			})
+			if (i == 0) {
+				this.initBaseDB.getprojvendor(this.projid).then(v2 => {
+					v2.forEach(v => {
+						this.responsibilityunits.push(v.name);
+						this.responsibilityunitids.push(v.id);
+						this.vendors.push(v.name);
+						this.vendids.push(v.id);
+						this.vendmanagers.push(v.manager);
+						this.vendmanagernames.push(v.managename);
+						this.vendmanagerphone.push(v.phone);
+						i++;
+					})
+					if (i > 0) {
+						this.vend = this.vendors[0];
+						this.vendid = this.vendids[0];
+						this.resunit = this.responsibilityunits[0];
+						this.resunitid = this.responsibilityunitids[0];
+						this.manager = this.vendmanagers[0];
+						this.managername = this.vendmanagernames[0];
+						this.managerphone = this.vendmanagerphone[0];
+					}
+					console.log(this.issuedescDiv);
+					let x: any; x = this.issuedescDiv;
+					setTimeout(() => {
+						x.open();
+					}, 0);
+				})
+			} else {
+				this.vend = this.vendors[0];
+				this.vendid = this.vendids[0];
+				this.resunit = this.responsibilityunits[0];
+				this.resunitid = this.responsibilityunitids[0];
+				this.manager = this.vendmanagers[0];
+				this.managername = this.vendmanagernames[0];
+				this.managerphone = this.vendmanagerphone[0];
+				console.log(this.issuedescDiv);
+				let x: any; x = this.issuedescDiv;
+				setTimeout(() => {
+					x.open();
+				}, 0);
+			}
+		})
+	}
+
+	issuedescchange(event) {
+		this.timelimit = 0;
+		this.initBaseDB.getduetime(this.projid, this.checkitemid, event).then(val => {
+			console.log(JSON.stringify(val.rows.item(0)));
+			this.timelimit = val.rows.item(0).Timelimit;
+			console.log(this.timelimit);
 		})
 	}
 
 	vendorchange() {
-		this.vendid = this.vendids[this.vendors.indexOf(this.vend,0)];
-		console.log("vendorid:" + this.vendid);		
-		this.manager = this.vendmanagers[this.vendors.indexOf(this.vend,0)];
+		let i = 0; i = this.vendors.indexOf(this.vend, 0);
+		this.vendid = this.vendids[i];
+		console.log("vendorid:" + this.vendid);
+		this.manager = this.vendmanagers[i];
+		this.managername = this.vendmanagernames[i];
+		this.managerphone = this.vendmanagerphone[i];
 	}
 
 	responsibilityunitchange() {
-		this.resunitid = this.responsibilityunitids[this.responsibilityunits.indexOf(this.resunit,0)];		
+		this.resunitid = this.responsibilityunitids[this.responsibilityunits.indexOf(this.resunit, 0)];
 	}
 
 	fixedchange(event) {
 		console.log(event);
 		console.log(this.fixedchecked);
-		console.log(event.checked);	
-		this.fixedchecked = event.checked;	
+		console.log(event.checked);
+		this.fixedchecked = event.checked;
 	}
 
 	cameraclick() {
@@ -217,9 +291,9 @@ export class IssuePage {
 				resolve(100);
 			});
 			resolve(promise.then((v1) => {
-				return this.initBaseDB.updateImgData(this.projid,this.batchid,this.buildingid, this.images);
+				return this.initBaseDB.updateImgData(this.projid, this.batchid, this.buildingid, this.images);
 			}).then((v2: any) => {
-				let sql = "insert into #tablename# (Id,BatchId,IssueId,RoomId,PositionId,CheckItemId,PlusDesc,IssueDesc,UrgencyId,IssueStatus,VendId,ResponVendId,ProjId,RegisterDate,VersionId,BuildingId,EngineerPhone,EngineerName,X,Y,manager #imgfields# #reformdate#) values (#values#)"
+				let sql = "insert into #tablename# (Id,BatchId,IssueId,RoomId,PositionId,CheckItemId,PlusDesc,IssueDesc,UrgencyId,IssueStatus,VendId,ResponVendId,ProjId,RegisterDate,LimitDate,VersionId,BuildingId,EngineerPhone,EngineerName,X,Y,manager,ManagerName,ManagerPhone #imgfields# #reformdate#) values (#values#)"
 				let value = [];
 				let now = new Date();
 				let refields = "";
@@ -229,7 +303,13 @@ export class IssuePage {
 					IssueStatus = '已整改';
 					refields = ',ReFormDate,ReviewDate';
 				}
-                console.log("x:"+this.issue_x+"y:"+this.issue_y);
+				console.log("x:" + this.issue_x + "y:" + this.issue_y);
+				let t = new Date(now.getTime() + this.timelimit * 24 * 3600 * 1000);
+				let w = new Date(Date.UTC(t.getFullYear(), t.getMonth(), t.getDate(), 15, 59, 59));
+				console.log(w.toLocaleString());
+				let duetime:string;
+				duetime = w.toLocaleDateString()+" "+w.getHours().toString()+":59:59";
+				console.log(duetime);
 				value.push("'" + this.issueid + "'");
 				value.push("'" + this.batchid + "'");
 				value.push("'新增问题'");
@@ -244,6 +324,7 @@ export class IssuePage {
 				value.push("'" + this.resunitid + "'");
 				value.push("'" + this.projid + "'");
 				value.push("datetime('now', 'localtime')");
+				value.push("'" + duetime + "'");
 				value.push("0");
 				value.push("'" + this.buildingid + "'");
 				value.push("'" + this.userid + "'");
@@ -251,9 +332,11 @@ export class IssuePage {
 				value.push(this.issue_x);
 				value.push(this.issue_y);
 				value.push("'" + this.manager + "'");
+				value.push("'" + this.managername + "'");
+				value.push("'" + this.managerphone + "'");
 				let imgfields = '';
 				for (var i = 0; i < v2.length; i++) {
-					imgfields += ',ImgBefore' + (i+1).toString();
+					imgfields += ',ImgBefore' + (i + 1).toString();
 					value.push("'" + v2[i] + "'");
 					console.log(imgfields);
 				}
@@ -261,7 +344,7 @@ export class IssuePage {
 					value.push("datetime('now', 'localtime')");
 					value.push("datetime('now', 'localtime')");
 				}// #imgfields# #reformdate#) values (#values#)"
-				sql = sql.replace('#imgfields#', imgfields).replace('#reformdate#', refields).replace('#values#', value.join(',')).replace('#tablename#',this.initBaseDB.getissuetablename(this.type));
+				sql = sql.replace('#imgfields#', imgfields).replace('#reformdate#', refields).replace('#values#', value.join(',')).replace('#tablename#', this.initBaseDB.getissuetablename(this.type));
 				console.log(sql);
 				return this.initBaseDB.updateIssue([sql]);
 			}).then((v3) => {
@@ -274,9 +357,11 @@ export class IssuePage {
 	}
 
 	uploadclick() {
-		this.uploaddata().then(v=>{
-			this.navCtrl.pop();
-		})
+		if (this.Cansubmit()) {
+			this.uploaddata().then(v => {
+				this.navCtrl.pop();
+			})
+		}
 	}
 
 	deleteimage(imagesrc) {

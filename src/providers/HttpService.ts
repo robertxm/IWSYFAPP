@@ -8,7 +8,8 @@ export class HttpService {
   constructor(private http: Http) {
   }
 
-  public get(url: string, paramObj: any) {
+  public get(url: string, paramObj: any) {    
+    console.log(url + this.toQueryString(paramObj));
     return this.http.get(url + this.toQueryString(paramObj))
       .toPromise()
       .then(res => this.handleSuccess(res.json()))

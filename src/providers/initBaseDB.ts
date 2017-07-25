@@ -10,12 +10,14 @@ import { FILE_TOKEN } from '../providers/Constants';
 import { HttpService } from '../providers/HttpService';
 import { LocalStorage } from '../providers/local-storage';
 import { Md5 } from "ts-md5/dist/md5";
+import { NativeService } from '../providers/nativeservice';
 
 @Injectable()
 export class initBaseDB {
   db: SQLiteObject;
   basedata: Array<any>;
-  constructor(public http: Http, private sqlite: SQLite, public storage: Storage, private sqlitePorter: SQLitePorter, private httpService: HttpService, public localStorage: LocalStorage) {
+  constructor(public http: Http, private sqlite: SQLite, public storage: Storage, private sqlitePorter: SQLitePorter, private httpService: HttpService,
+    public localStorage: LocalStorage, public nativeservice: NativeService) {
 
   }
 
@@ -58,7 +60,7 @@ export class initBaseDB {
           }).then((v3) => {
             return this.initBaseTable("apartmentpostionlink", "Projid,Apartmentid,Positionid,Id");
           }).then((v4) => {
-            return this.initBaseTable("apartmentpostiondraws", "Apartmentpostionlinkid,X integer,Y integer,Projid");
+            return this.initBaseTable("apartmentpostiondraws", "Apartmentpostionlinkid,X integer,Y integer,Projid,Sortcode integer");
           }).then((v5) => {
             return this.initBaseTable("projcheckitems", "ProjId,Id,Name");
           }).then((v6) => {
@@ -66,7 +68,7 @@ export class initBaseDB {
           }).then((v7) => {
             return this.initBaseTable("positioncheckitemlink", "Projid,Positionid,Checkitemid");
           }).then((v8) => {
-            return this.initBaseTable("Vend", "Id,NameAlias,Manager,Phone,Projid");
+            return this.initBaseTable("Vend", "Id,NameAlias,Manager,ManagerName,Phone,Projid");
           }).then((v9) => {
             return this.initBaseTable("CustSatisfaction", "Id,Type,Name,Sortcode integer");
           }).then((vv) => {
@@ -172,52 +174,58 @@ export class initBaseDB {
     })
   }
 
-  initProjVersion(token): Promise<any> {
+  initProjVersion(token, builderrole: boolean = false): Promise<any> {
     return new Promise((resolve) => {
-      this.httpService.get(APP_SERVE_URL + "/ProjectVersion", { Token: token }).then(res => {
+      this.httpService.get(APP_SERVE_URL + "/ProjectVersion", { Token: token, VendRole: builderrole }).then(res => {
         console.log(res);
         let items: Array<any>;
         items = res[0];
         console.log(items);
-        this.existstable("ProjVersion").then(counts => {
-          console.log(counts);
-          if (counts == 0) {
-            let promise = new Promise((resolve) => {
-              resolve(100);
-            });
-            resolve(promise.then((v1) => {
-              return this.initBaseTable("ProjVersion", "Projid,VersionId integer,ProjName,Needupd integer");
-            }).then((v2) => {
-              return this.initBaseData("ProjVersion", items[2]);
-            }).then((v3) => {
-              return this.db.executeSql("update ProjVersion set needupd = 1", []);
-            }).then((v4) => {
-              return this.setcurproj(token);
-            }).catch(err => {
-              console.log(err);
-            }))
-          }
-          else {
-            let promise = new Promise((resolve) => {
-              resolve(100);
-            });
-            resolve(promise.then((v1) => {
-              return this.initBaseTable("tmpprojversion", "Projid,VersionId integer,ProjName,Needupd integer");
-            }).then((v2) => {
-              return this.initBaseData("tmpprojversion", items[2]);
-            }).then((v3) => {
-              return this.db.executeSql("delete from ProjVersion where ProjId not in (select projid from tmpprojversion)", []);
-            }).then((v4) => {
-              return this.db.executeSql("update ProjVersion set needupd = 1 where exists(select * from tmpprojversion where tmpprojversion.projid = ProjVersion.projid and tmpprojversion.versionid != ProjVersion.versionid)", []);
-            }).then((v5) => {
-              return this.db.executeSql("insert into ProjVersion (Projid,ProjName,VersionId,needupd) select Projid,ProjName,VersionId,1 from tmpprojversion where tmpprojversion.projid not in (select projid from ProjVersion)", []);
-            }).then((v6) => {
-              return this.setcurproj(token);
-            }).catch(err => {
-              console.log(err);
-            }))
-          }
-        })
+        console.log(items[2].length);
+        if (!items[2] || items[2].length == 0) {
+          console.log("no proj");
+          resolve("no proj");
+        } else {
+          this.existstable("ProjVersion").then(counts => {
+            console.log(counts);
+            if (counts == 0) {
+              let promise = new Promise((resolve) => {
+                resolve(100);
+              });
+              resolve(promise.then((v1) => {
+                return this.initBaseTable("ProjVersion", "Projid,VersionId integer,ProjName,Needupd integer,LastDate default ''");
+              }).then((v2) => {
+                return this.initBaseData("ProjVersion", items[2]);
+              }).then((v3) => {
+                return this.db.executeSql("update ProjVersion set needupd = 1", []);
+              }).then((v4) => {
+                return this.setcurproj(token, builderrole);
+              }).catch(err => {
+                console.log(err);
+              }))
+            }
+            else {
+              let promise = new Promise((resolve) => {
+                resolve(100);
+              });
+              resolve(promise.then((v1) => {
+                return this.initBaseTable("tmpprojversion", "Projid,VersionId integer,ProjName,Needupd integer,LastDate default ''");
+              }).then((v2) => {
+                return this.initBaseData("tmpprojversion", items[2]);
+              }).then((v3) => {
+                return this.db.executeSql("delete from ProjVersion where ProjId not in (select projid from tmpprojversion)", []);
+              }).then((v4) => {
+                return this.db.executeSql("update ProjVersion set needupd = 1 where exists(select * from tmpprojversion where tmpprojversion.projid = ProjVersion.projid and tmpprojversion.versionid != ProjVersion.versionid)", []);
+              }).then((v5) => {
+                return this.db.executeSql("insert into ProjVersion (Projid,ProjName,VersionId,needupd) select Projid,ProjName,VersionId,1 from tmpprojversion where tmpprojversion.projid not in (select projid from ProjVersion)", []);
+              }).then((v6) => {
+                return this.setcurproj(token, builderrole);
+              }).catch(err => {
+                console.log(err);
+              }))
+            }
+          })
+        }
       })
     })
   }
@@ -250,7 +258,7 @@ export class initBaseDB {
 
   }
 
-  setcurproj(token): Promise<any> {
+  setcurproj(token, builderrole: boolean): Promise<any> {
     return new Promise((resolve) => {
       var projid: string;
       console.log("setcurproj");
@@ -261,12 +269,16 @@ export class initBaseDB {
             projid = v2.rows.item(0).Projid;
             console.log(projid);
             this.localStorage.setItem('curproj', { projid: v2.rows.item(0).Projid, projname: v2.rows.item(0).ProjName, versionid: v2.rows.item(0).VersionId, needupd: v2.rows.item(0).Needupd }).then(v => {
-              this.updatecurproj(token).then(v => {
-                console.log("v");
-                console.log(v);
-                console.log(projid);
+              if (builderrole == true) {
                 resolve(projid);
-              })
+              } else {
+                this.updatecurproj(token).then(v => {
+                  console.log("v");
+                  console.log(v);
+                  console.log(projid);
+                  resolve(projid);
+                })
+              }
             })
           }).catch(e => {
             alert("项目加载错误：" + JSON.stringify(e));
@@ -274,16 +286,20 @@ export class initBaseDB {
         }
         else {
           this.db.executeSql("SELECT Projid,ProjName,VersionId,needupd FROM ProjVersion where ProjVersion.projid = '" + val.projid + "'", []).then(v => {
-            if (v.rows.item(0).Projid == '') {
-              this.db.executeSql("SELECT Projid,ProjName,VersionId,Needupd FROM ProjVersion", []).then(v2 => {
+            if (!v || v.rows.item(0).Projid == '') {
+              this.db.executeSql("SELECT Projid,ProjName,VersionId,Needupd FROM ProjVersion order by versionid", []).then(v2 => {
                 projid = v2.rows.item(0).Projid;
                 this.localStorage.setItem('curproj', { projid: v2.rows.item(0).Projid, projname: v2.rows.item(0).ProjName, versionid: v2.rows.item(0).VersionId, needupd: v2.rows.item(0).Needupd }).then(v => {
-                  this.updatecurproj(token).then(v => {
-                    console.log("v");
-                    console.log(v);
-                    console.log(projid);
+                  if (builderrole == true) {
                     resolve(projid);
-                  })
+                  } else {
+                    this.updatecurproj(token).then(v => {
+                      console.log("v");
+                      console.log(v);
+                      console.log(projid);
+                      resolve(projid);
+                    })
+                  }
                 })
               }).catch(e => {
                 alert("项目加载错误：" + JSON.stringify(e));
@@ -292,13 +308,16 @@ export class initBaseDB {
             else {
               projid = v.rows.item(0).Projid;
               this.localStorage.setItem('curproj', { projid: v.rows.item(0).Projid, projname: v.rows.item(0).ProjName, versionid: v.rows.item(0).VersionId, needupd: v.rows.item(0).Needupd }).then(v => {
-                this.updatecurproj(token).then(v => {
-                  console.log("v");
-                  console.log(v);
-                  console.log(projid);
+                if (builderrole == true) {
                   resolve(projid);
-                })
-
+                } else {
+                  this.updatecurproj(token).then(v => {
+                    console.log("v");
+                    console.log(v);
+                    console.log(projid);
+                    resolve(projid);
+                  })
+                }
               })
             }
           }).catch(e => {
@@ -341,35 +360,62 @@ export class initBaseDB {
     })
   }
 
-  checkandupdprojversion(projid, token, versionid: number): Promise<any> {
+  checkandupdprojversion(projid, token, versionid: number, vendrole: boolean = false): Promise<any> {
     return new Promise((resolve) => {
-      this.httpService.get(APP_SERVE_URL + "/ProjectVersion", { Token: token, ProjId: projid }).then(res => {
-        let items: Array<any>;
-        items = res[0];
-        console.log(items);
-        let item: Array<any>;
-        item = items[2];
-        console.log(item);
-        if (item[0].versionid != versionid) {
-          this.localStorage.getItem('curproj').then(v => {
-            let promise = new Promise((resolve) => {
+      let promise = new Promise((resolve) => {
+        resolve(100);
+      });
+
+      resolve(promise.then((v1) => {
+        return this.nativeservice.isConnecting();
+      }).then((val) => {
+        if (val == false) {
+          return this.localStorage.getItem('curproj').then(v => {
+            let promise2 = new Promise((resolve) => {
               resolve(100);
             });
-            resolve(promise.then((v1) => {
-              return this.db.executeSql("update ProjVersion set needupd = 1 where projid = '" + projid + "'", []);
-            }).then((v2) => {
+            resolve(promise2.then((v1) => {
               return this.localStorage.setItem('curproj', { projid: v.projid, projname: v.projname, versionid: v.versionid, needupd: 1 });
-            }).then((v3) => {
-              return this.updatecurproj(token);
             }).catch(err => {
               console.log(err);
             }))
           })
+        } else {
+          if (vendrole == true) {
+            return this.downloadbuilderdata(token, projid);
+          } else {
+            this.httpService.get(APP_SERVE_URL + "/ProjectVersion", { Token: token, ProjId: projid, VendRole: vendrole }).then(res => {
+              let items: Array<any>;
+              items = res[0];
+              console.log(items);
+              let item: Array<any>;
+              item = items[2];
+              console.log(item);
+              if (item[0].versionid != versionid) {
+                this.localStorage.getItem('curproj').then(v => {
+                  let promise2 = new Promise((resolve) => {
+                    resolve(100);
+                  });
+                  resolve(promise2.then((v1) => {
+                    return this.db.executeSql("update ProjVersion set needupd = 1 where projid = '" + projid + "'", []);
+                  }).then((v2) => {
+                    return this.localStorage.setItem('curproj', { projid: v.projid, projname: v.projname, versionid: v.versionid, needupd: 1 });
+                  }).then((v3) => {
+                    return this.updatecurproj(token);
+                  }).catch(err => {
+                    console.log(err);
+                  }))
+                })
+              }
+              else {
+                resolve(1);
+              }
+            })
+          }
         }
-        else {
-          resolve(1);
-        }
-      })
+      }).catch(err => {
+        console.log(err);
+      }))
     })
   }
 
@@ -379,49 +425,85 @@ export class initBaseDB {
       this.httpService.get(APP_SERVE_URL + "/BuildingVersion", { Token: token, ProjId: projid }).then(res => {
         console.log(res);
         let items: Array<any>;
-        items = res[0];
-        console.log(items);
         this.existstable("buildingversion").then(counts => {
           if (counts == 0) {
             let promise = new Promise((resolve) => {
               resolve(100);
             });
-            resolve(promise.then((v1) => {
-              return this.initBaseTable("buildingversion", "Projid,Buildingid,BuildingName,Batchid,VersionId integer,Type integer,BatchName,downloadversionId integer,needupd integer,needdownload integer,needupload integer");
-            }).then((v2) => {
-              return this.initBaseData("buildingversion", items[2]);//items[2]);
-            }).then((v3) => {
-              return this.db.executeSql("update buildingversion set needupd = 1, needdownload = 1, versionid = 0", []);
-            }).then((v4) => {
-              return this.initBaseTable("uplimagetable", "Projid,Buildingid,Batchid,fn");
-            }).catch(err => {
-              console.log(err);
-            }))
+            if (res) {
+              items = res[0];
+              console.log(items);
+              resolve(promise.then((v1) => {
+                return this.initBaseTable("buildingversion", "Projid,Buildingid,BuildingName,Batchid,VersionId integer,Type integer,BatchName,downloadversionId integer,needupd integer,needdownload integer,needupload integer");
+              }).then((v2) => {
+                return this.initBaseData("buildingversion", items[2]);//items[2]);
+              }).then((v3) => {
+                return this.db.executeSql("update buildingversion set needupd = 1, needdownload = 1, versionid = 0", []);
+              }).then((v4) => {
+                return this.initBaseTable("uplimagetable", "Projid,Buildingid,Batchid,fn");
+              }).catch(err => {
+                console.log(err);
+              }))
+            } else {
+              resolve(promise.then((v1) => {
+                return this.initBaseTable("buildingversion", "Projid,Buildingid,BuildingName,Batchid,VersionId integer,Type integer,BatchName,downloadversionId integer,needupd integer,needdownload integer,needupload integer");
+              }).then((v4) => {
+                return this.initBaseTable("uplimagetable", "Projid,Buildingid,Batchid,fn");
+              }).catch(err => {
+                console.log(err);
+              }))
+            }
           }
           else {
             let promise = new Promise((resolve) => {
               resolve(100);
             });
-            resolve(promise.then((v1) => {
-              return this.initBaseTable("tmpbuildingversion", "Projid,Buildingid,BuildingName,Batchid,VersionId integer,Type integer,BatchName,downloadversionId integer,needupd integer,needdownload integer,needupload integer");
-            }).then((v2) => {
-              return this.initBaseData("tmpbuildingversion", items[2]);//items[2]);
-            }).then((v3) => {
-              let sql = "delete from buildingversion where not exists (select tb.ProjId from tmpbuildingversion tb where tb.projid = buildingversion.projid and tb.batchid = buildingversion.batchid and tb.buildingid = buildingversion.buildingid ) and projid = '" + projid + "'";
-              console.log(sql);
-              return this.db.executeSql(sql, []);
-            }).then((v4) => {
-              console.log("v4");
-              return this.db.executeSql("update buildingversion set needupd = 1 where exists(select * from tmpbuildingversion where buildingversion.projid = tmpbuildingversion.projid and buildingversion.buildingid = tmpbuildingversion.buildingid and buildingversion.batchid = tmpbuildingversion.batchid and buildingversion.versionid != tmpbuildingversion.versionid)", []);
-            }).then((v5) => {
-              console.log("v5");
-              return this.db.executeSql("update buildingversion set needdownload = 1 from buildingversion inner join tmpbuildingversion on buildingversion.projid = tmpbuildingversion.projid and buildingversion.buildingid = tmpbuildingversion.buildingid and buildingversion.batchid = tmpbuildingversion.batchid and buildingversion.downloadversionId != tmpbuildingversion.downloadversionId", []);
-            }).then((v6) => {
-              console.log("v6");
-              return this.db.executeSql("insert into buildingversion (Projid,Buildingid,BuildingName,Batchid,BatchName,Type,VersionId,needupd,downloadversionId,needdownload) select Projid,Buildingid,BuildingName,Batchid,BatchName,Type,VersionId,1,downloadversionId,1 from tmpbuildingversion where not exists (select projid from buildingversion where buildingversion.projid=tmpbuildingversion.projid and buildingversion.buildingid = tmpbuildingversion.buildingid and buildingversion.batchid = tmpbuildingversion.batchid and buildingversion.projid = '" + projid + "')", []);
-            }).catch(err => {
-              console.log(err);
-            }))
+            if (res) {
+              items = res[0];
+              console.log(items);
+              resolve(promise.then((v1) => {
+                return this.initBaseTable("tmpbuildingversion", "Projid,Buildingid,BuildingName,Batchid,VersionId integer,Type integer,BatchName,downloadversionId integer,needupd integer,needdownload integer,needupload integer");
+              }).then((v2) => {
+                return this.initBaseData("tmpbuildingversion", items[2]);//items[2]);
+              }).then((v3) => {
+                let sql = "delete from buildingversion where not exists (select tb.ProjId from tmpbuildingversion tb where tb.projid = buildingversion.projid and tb.batchid = buildingversion.batchid and tb.buildingid = buildingversion.buildingid ) and projid = '" + projid + "'";
+                console.log(sql);
+                return this.db.executeSql(sql, []);
+              }).then((v4) => {
+                console.log("v4");
+                return this.db.executeSql("update buildingversion set needupd = 1 where exists (select * from tmpbuildingversion where buildingversion.projid = tmpbuildingversion.projid and buildingversion.buildingid = tmpbuildingversion.buildingid and buildingversion.batchid = tmpbuildingversion.batchid and buildingversion.versionid != tmpbuildingversion.versionid)", []);
+              }).then((v51) => {
+                console.log("v51");
+                return this.db.executeSql("select * from buildingversion", []).then(v => {
+                  if (v) {
+                    for (let i = 0; i < v.rows.length; i++) {
+                      console.log(JSON.stringify(v.rows.item(i)));
+                    }
+                  }
+                  else { console.log("无记录"); }
+                })
+              }).then((v5) => {
+                console.log("v5");
+                return this.db.executeSql("update buildingversion set needdownload = 1 where exists (select projid from tmpbuildingversion where buildingversion.projid = tmpbuildingversion.projid and buildingversion.buildingid = tmpbuildingversion.buildingid and buildingversion.batchid = tmpbuildingversion.batchid and buildingversion.downloadversionId != tmpbuildingversion.downloadversionId)", []);
+              }).then((v52) => {
+                console.log("v52");
+                return this.db.executeSql("select * from buildingversion", []).then(v => {
+                  if (v) {
+                    for (let i = 0; i < v.rows.length; i++) {
+                      console.log(JSON.stringify(v.rows.item(i)));
+                    }
+                  }
+                  else { console.log("无记录"); }
+                })
+              }).then((v6) => {
+                console.log("v6");
+                return this.db.executeSql("insert into buildingversion (Projid,Buildingid,BuildingName,Batchid,BatchName,Type,VersionId,needupd,downloadversionId,needdownload) select Projid,Buildingid,BuildingName,Batchid,BatchName,Type,VersionId,1,downloadversionId,1 from tmpbuildingversion where not exists (select projid from buildingversion where buildingversion.projid=tmpbuildingversion.projid and buildingversion.buildingid = tmpbuildingversion.buildingid and buildingversion.batchid = tmpbuildingversion.batchid and buildingversion.projid = '" + projid + "')", []);
+              }).catch(err => {
+                console.log(err);
+              }))
+            } else {
+              resolve(this.initBaseTable("tmpbuildingversion", "Projid,Buildingid,BuildingName,Batchid,VersionId integer,Type integer,BatchName,downloadversionId integer,needupd integer,needdownload integer,needupload integer"));
+            }
           }
         })
       })
@@ -430,6 +512,7 @@ export class initBaseDB {
 
   initbuildingbaseData(data, projid, batchid, buildingid, type): Promise<any> {
     return new Promise((resolve) => {
+      console.log("initbuildingbaseData");
       for (var i = 2; i < data.length; i += 2) {
         let items = data[i];
         console.log(items[0]);
@@ -474,11 +557,11 @@ export class initBaseDB {
             }).then((v6) => {
               return this.initApartImage(projid, buildingid);
             }).then((v7) => {
-              return this.initBaseTable("FormalCheckIssues", "BatchId,IssueId default '',RoomId,PositionId,CheckItemId,PlusDesc default '',IssueDesc default '',UrgencyId default '',ImgBefore1 default '',ImgBefore2 default '',ImgBefore3 default '',ImgAfter1 default '',ImgAfter2 default '',ImgAfter3 default '',Id primary key,IssueStatus,VendId default '',ResponVendId default '',ProjId default '',Manager default '',ResponsibleId default '',IssueType default '',RegisterDate datetime default '1753-01-01 00:00:00',AppointDate datetime default '1753-01-01 12:00:00',LimitDate datetime default '1753-01-01 12:00:00',ReFormDate datetime default '1753-01-01 12:00:00',CloseDate datetime default '1753-01-01 12:00:00',CloseReason default '',CancelDate datetime default '1753-01-01 12:00:00',CancelReason defalut '',VersionId integer,ImgClose1 default '',ImgClose2 default '',ImgClose3 default '',ReturnDate datetime default '1753-01-01 12:00:00',ReturnReason default '',ReturnNum integer default 0 ,BuildingId default '',EngineerId default '',ReviewDate datetime default '1753-01-01 12:00:00',x integer default 0,y integer default 0,ResponsibleName default '',ResponsiblePhone default '',EngineerName default '',EngineerPhone default ''");
+              return this.initBaseTable("FormalCheckIssues", "BatchId,IssueId default '',RoomId,PositionId,CheckItemId,PlusDesc default '',IssueDesc default '',UrgencyId default '',ImgBefore1 default '',ImgBefore2 default '',ImgBefore3 default '',ImgAfter1 default '',ImgAfter2 default '',ImgAfter3 default '',Id primary key,IssueStatus,VendId default '',ResponVendId default '',ProjId default '',Manager default '',ResponsibleId default '',IssueType default '',RegisterDate datetime,AppointDate datetime,LimitDate datetime,ReFormDate datetime,CloseDate datetime,CloseReason default '',CancelDate datetime,CancelReason defalut '',VersionId integer,ImgClose1 default '',ImgClose2 default '',ImgClose3 default '',ReturnDate datetime,ReturnReason default '',ReturnNum integer default 0 ,BuildingId default '',EngineerId default '',ReviewDate datetime,x integer default 0,y integer default 0,ResponsibleName default '',ResponsiblePhone default '',EngineerName default '',EngineerPhone default '',ManagerName default '',ManagerPhone default '',ReassignDate datetime,ReassignDesc,ReasonbyOver,fixedDesc ");
             }).then((v8) => {
-              return this.initBaseTable("tmpFormalCheckIssues", "BatchId,IssueId default '',RoomId,PositionId,CheckItemId,PlusDesc default '',IssueDesc default '',UrgencyId default '',ImgBefore1 default '',ImgBefore2 default '',ImgBefore3 default '',ImgAfter1 default '',ImgAfter2 default '',ImgAfter3 default '',Id primary key,IssueStatus,VendId default '',ResponVendId default '',ProjId default '',Manager default '',ResponsibleId default '',IssueType default '',RegisterDate datetime default '1753-01-01 00:00:00',AppointDate datetime default '1753-01-01 12:00:00',LimitDate datetime default '1753-01-01 12:00:00',ReFormDate datetime default '1753-01-01 12:00:00',CloseDate datetime default '1753-01-01 12:00:00',CloseReason default '',CancelDate datetime default '1753-01-01 12:00:00',CancelReason defalut '',VersionId integer,ImgClose1 default '',ImgClose2 default '',ImgClose3 default '',ReturnDate datetime default '1753-01-01 12:00:00',ReturnReason default '',ReturnNum integer default 0,BuildingId default '',EngineerId default '',ReviewDate datetime default '1753-01-01 12:00:00',x integer default 0,y integer default 0,ResponsibleName default '',ResponsiblePhone default '',EngineerName default '',EngineerPhone default ''");
+              return this.initBaseTable("tmpFormalCheckIssues", "BatchId,IssueId default '',RoomId,PositionId,CheckItemId,PlusDesc default '',IssueDesc default '',UrgencyId default '',ImgBefore1 default '',ImgBefore2 default '',ImgBefore3 default '',ImgAfter1 default '',ImgAfter2 default '',ImgAfter3 default '',Id primary key,IssueStatus,VendId default '',ResponVendId default '',ProjId default '',Manager default '',ResponsibleId default '',IssueType default '',RegisterDate datetime,AppointDate datetime,LimitDate datetime,ReFormDate datetime,CloseDate datetime,CloseReason default '',CancelDate datetime,CancelReason defalut '',VersionId integer,ImgClose1 default '',ImgClose2 default '',ImgClose3 default '',ReturnDate datetime,ReturnReason default '',ReturnNum integer default 0,BuildingId default '',EngineerId default '',ReviewDate datetime,x integer default 0,y integer default 0,ResponsibleName default '',ResponsiblePhone default '',EngineerName default '',EngineerPhone default '',ManagerName default '',ManagerPhone default '',ReassignDate datetime,ReassignDesc,ReasonbyOver,fixedDesc");
             }).then((v8) => {
-              return this.initBaseTable("uplFormalCheckIssues", "BatchId,IssueId default '',RoomId,PositionId,CheckItemId,PlusDesc default '',IssueDesc default '',UrgencyId default '',ImgBefore1 default '',ImgBefore2 default '',ImgBefore3 default '',ImgAfter1 default '',ImgAfter2 default '',ImgAfter3 default '',Id primary key,IssueStatus,VendId default '',ResponVendId default '',ProjId default '',Manager default '',ResponsibleId default '',IssueType default '',RegisterDate datetime default '1753-01-01 00:00:00',AppointDate datetime default '1753-01-01 12:00:00',LimitDate datetime default '1753-01-01 12:00:00',ReFormDate datetime default '1753-01-01 12:00:00',CloseDate datetime default '1753-01-01 12:00:00',CloseReason default '',CancelDate datetime default '1753-01-01 12:00:00',CancelReason defalut '',VersionId integer,ImgClose1 default '',ImgClose2 default '',ImgClose3 default '',ReturnDate datetime default '1753-01-01 12:00:00',ReturnReason default '',ReturnNum integer default 0,BuildingId default '',EngineerId default '',ReviewDate datetime default '1753-01-01 12:00:00',x integer default 0,y integer default 0,ResponsibleName default '',ResponsiblePhone default '',EngineerName default '',EngineerPhone default ''");
+              return this.initBaseTable("uplFormalCheckIssues", "BatchId,IssueId,RoomId,PositionId,CheckItemId,PlusDesc,IssueDesc,UrgencyId,ImgBefore1,ImgBefore2,ImgBefore3,ImgAfter1,ImgAfter2,ImgAfter3,Id primary key,IssueStatus,VendId,ResponVendId,ProjId,Manager,ResponsibleId,IssueType,RegisterDate datetime,AppointDate datetime,LimitDate datetime,ReFormDate datetime,CloseDate datetime,CloseReason,CancelDate datetime,CancelReason,VersionId integer,ImgClose1,ImgClose2,ImgClose3,ReturnDate datetime,ReturnReason,ReturnNum integer,BuildingId,EngineerId,ReviewDate datetime,x integer,y integer,ResponsibleName,ResponsiblePhone,EngineerName,EngineerPhone,ManagerName,ManagerPhone,ReassignDate,ReassignDesc,ReasonbyOver,fixedDesc");
             }).then((v9) => {
               return this.initBaseTable("CustRoomSatisfactions", "RoomId,SatisfiedDim,HousingType,Score integer default 5,ProjId,VersionId integer,Id,BatchId,Buildingid");
             }).then((v10) => {
@@ -488,9 +571,9 @@ export class initBaseDB {
             }).then((v12) => {
               return this.initBaseTable("tmpRoomNoAcceptLogs", "ProjId,RoomId,PlusDesc,VersionId,ID,ReasonNoAcceptId,BatchId,Buildingid,UserName,TransDate");
             }).then((v13) => {
-              return this.initBaseTable("FormalRoomDetails", "RoomId,TransDate DateTime default '1753-01-01 12:00:00',RoomStatus,CustId,CustPhone,Remark,EngineerId,EngineerPhone,ImgSign,ProjId,VersionId integer,ID,AmmeterNumber,AmmeterReading real default 0,WaterMeterNumber,WaterMeterReading real default 0,GasMeterNumber,GasMeterReading real default 0,KeyRetentionStatus integer default 0,BatchId,BuildingId,EngineerName");
+              return this.initBaseTable("FormalRoomDetails", "RoomId,TransDate DateTime,RoomStatus,CustId,CustPhone,Remark,EngineerId,EngineerPhone,ImgSign,ProjId,VersionId integer,ID,AmmeterNumber,AmmeterReading real,WaterMeterNumber,WaterMeterReading real,GasMeterNumber,GasMeterReading real,KeyRetentionStatus integer,BatchId,BuildingId,EngineerName");
             }).then((v14) => {
-              return this.initBaseTable("tmpFormalRoomDetails", "RoomId,TransDate DateTime default '1753-01-01 12:00:00',RoomStatus,CustId,CustPhone,Remark,EngineerId,EngineerPhone,ImgSign,ProjId,VersionId integer,ID,AmmeterNumber,AmmeterReading real default 0,WaterMeterNumber,WaterMeterReading real default 0,GasMeterNumber,GasMeterReading real default 0,KeyRetentionStatus integer default 0,BatchId,BuildingId,EngineerName");
+              return this.initBaseTable("tmpFormalRoomDetails", "RoomId,TransDate DateTime,RoomStatus,CustId,CustPhone,Remark,EngineerId,EngineerPhone,ImgSign,ProjId,VersionId integer,ID,AmmeterNumber,AmmeterReading real,WaterMeterNumber,WaterMeterReading real,GasMeterNumber,GasMeterReading real ,KeyRetentionStatus integer,BatchId,BuildingId,EngineerName");
             }).catch(err => {
               console.log(err);
             }))
@@ -556,6 +639,7 @@ export class initBaseDB {
       let promise = new Promise((resolve) => {
         resolve(100);
       });
+
       resolve(promise.then((v1) => {
         console.log('downloadbuildinginfo:v1 :' + v1);
         return this.initformalcheckbaseTable(token, projid, batchid, buildingid);
@@ -619,7 +703,7 @@ export class initBaseDB {
       let tmppromise = Promise.resolve([]);
       for (var i = 0; i < tablenames.length; i++) {
         let tablename = tablenames[i];
-        console.log('reset up'+tablename);
+        console.log('reset up' + tablename);
         tmppromise = tmppromise.then(() => {
           let sql = "delete from #tablename# where projid = '#projid#' and batchid = '#batchid#' and buildingid = '#buildingid#' and versionid = 0";
           sql = sql.replace('#tablename#', tablename)
@@ -642,7 +726,6 @@ export class initBaseDB {
       }
       resolve(tmppromise);
     })
-
   }
 
 
@@ -687,7 +770,7 @@ export class initBaseDB {
         console.log(sql);
         return this.db.executeSql(sql, []);
       }).then((v5) => {
-        let sql = "update buildingversion set needupload = 0 where projid = '#projid#' and batchid = '#batchid#' and buildingid = '#buildingid#' and type = #type#";
+        let sql = "update buildingversion set needupload = 0,needupd = 1 where projid = '#projid#' and batchid = '#batchid#' and buildingid = '#buildingid#' and type = #type#";
         sql = sql.replace('#projid#', projid);
         sql = sql.replace('#batchid#', batchid);
         sql = sql.replace('#buildingid#', buildingid);
@@ -760,7 +843,7 @@ export class initBaseDB {
         return tmppromise;
       }).then((v2: any) => {
         let tablefield: Array<any>; tablefield = [];
-        tablefield.push("FormalCheckIssues"); tablefield.push("BatchId,IssueId,RoomId,PositionId,CheckItemId,PlusDesc,IssueDesc,UrgencyId,ImgBefore1,ImgBefore2,ImgBefore3,ImgAfter1,ImgAfter2,ImgAfter3,Id,IssueStatus,VendId,ResponVendId,ProjId,Manager,ResponsibleId,IssueType,RegisterDate ,AppointDate,LimitDate,ReFormDate,CloseDate,CloseReason,CancelDate,CancelReason,VersionId,ImgClose1,ImgClose2,ImgClose3,ReturnDate,ReturnReason,ReturnNum,BuildingId,EngineerId,ReviewDate ,x ,y ,ResponsibleName,ResponsiblePhone,EngineerName,EngineerPhone");
+        tablefield.push("FormalCheckIssues"); tablefield.push("BatchId,IssueId,RoomId,PositionId,CheckItemId,PlusDesc,IssueDesc,UrgencyId,ImgBefore1,ImgBefore2,ImgBefore3,ImgAfter1,ImgAfter2,ImgAfter3,Id,IssueStatus,VendId,ResponVendId,ProjId,Manager,ResponsibleId,IssueType,RegisterDate ,AppointDate,LimitDate,ReFormDate,CloseDate,CloseReason,CancelDate,CancelReason,VersionId,ImgClose1,ImgClose2,ImgClose3,ReturnDate,ReturnReason,ReturnNum,BuildingId,EngineerId,ReviewDate ,x ,y ,ResponsibleName,ResponsiblePhone,EngineerName,EngineerPhone,ReassignDate,ReassignDesc,ReasonbyOver,fixedDesc");
         tablefield.push("CustRoomSatisfactions"); tablefield.push("RoomId,SatisfiedDim,HousingType,Score,ProjId,VersionId,Id,BatchId,Buildingid");
         tablefield.push("RoomNoAcceptLogs"); tablefield.push("ProjId,RoomId,PlusDesc,VersionId,ID,ReasonNoAcceptId,BatchId,Buildingid,UserName,TransDate");
         tablefield.push("FormalRoomDetails"); tablefield.push("RoomId,TransDate,RoomStatus,CustId,CustPhone,Remark,EngineerId,EngineerPhone,ImgSign,ProjId,VersionId,ID,AmmeterNumber,AmmeterReading,WaterMeterNumber,WaterMeterReading,GasMeterNumber,GasMeterReading,KeyRetentionStatus,BatchId,BuildingId,EngineerName");
@@ -878,7 +961,13 @@ export class initBaseDB {
         resolve(100);
       });
       resolve(promise.then((v1) => {
-        return this.initbuildingversion(token, projid);
+        return this.nativeservice.isConnecting();
+      }).then((val: boolean) => {
+        if (val == false) {
+          return 10;
+        } else {
+          return this.initbuildingversion(token, projid);
+        }
       }).then((v1) => {
         let sql: string;
         sql = "SELECT batchname,batchid FROM buildingversion where projid = '#projid#' and type = #type# group by batchname,batchid";// 
@@ -1073,19 +1162,39 @@ export class initBaseDB {
       }).then((v2: any) => {
         console.log(v2);
         let issuelist: Array<any>; issuelist = [];
+        let dpd = 0, dzg = 0, yzg = 0, ytg = 0;
+        let status: string;
         for (var i = 0; i < v2.rows.length; i++) {
           console.log(JSON.stringify(v2.rows.item(i)));
           let now = new Date();
           let dt = new Date(v2.rows.item(i).LimitDate);
           let days = 0;
-          if (now < dt) {
-            days = dt.getDay() - now.getDay();
+          if (now > dt) {
+            days = Math.round((now.getTime() - dt.getTime()) / 1000 / 3600);
+          }
+          status = v2.rows.item(i).IssueStatus;
+          console.log(status)
+          if (status == "待派单") {
+            console.log("1" + status);
+            dpd++;
+          } else if (status == "待整改") {
+            console.log("2" + status);
+            dzg++;
+          } else if (status == "已整改") {
+            console.log("3" + status);
+            yzg++;
+          } else if (status == "已通过") {
+            console.log("4" + status);
+            ytg++;
           }
           console.log(v2.rows.item(i).ReturnNum);
-          issuelist.push({ id: v2.rows.item(i).Id, status: v2.rows.item(i).IssueStatus, position: v2.rows.item(i).position, checkitem: v2.rows.item(i).checkitem, x: v2.rows.item(i).x, y: v2.rows.item(i).y, issueid: v2.rows.item(i).IssueId, IssueDesc: v2.rows.item(i).IssueDesc, PlusDesc: v2.rows.item(i).PlusDesc, UrgencyId: v2.rows.item(i).UrgencyId, EngineerName: v2.rows.item(i).EngineerName, ResponsibleName: v2.rows.item(i).ResponsibleName, duedate: dt.toLocaleDateString(), overdays: days, returntimes: v2.rows.item(i).ReturnNum });
+          console.log(dt.toLocaleDateString());
+          console.log(dt.toLocaleString());
+          console.log(dpd + ";" + dzg + ";" + yzg + ";" + ytg);
+          issuelist.push({ id: v2.rows.item(i).Id, status: status, position: v2.rows.item(i).position, checkitem: v2.rows.item(i).checkitem, x: v2.rows.item(i).x, y: v2.rows.item(i).y, issueid: v2.rows.item(i).IssueId, IssueDesc: v2.rows.item(i).IssueDesc, PlusDesc: v2.rows.item(i).PlusDesc, UrgencyId: v2.rows.item(i).UrgencyId, EngineerName: v2.rows.item(i).EngineerName, ResponsibleName: v2.rows.item(i).ResponsibleName, duedate: dt.toLocaleDateString(), overdays: days, returntimes: v2.rows.item(i).ReturnNum });
         }
-        console.log(issuelist);
-        return issuelist;
+        console.log(issuelist); console.log(dpd + ";" + dzg + ";" + yzg + ";" + ytg);
+        return [issuelist, dpd, dzg, yzg, ytg];
       }).catch(err => {
         this.warn('问题加载失败:' + err);
       }))
@@ -1100,7 +1209,7 @@ export class initBaseDB {
       let areas: Array<any>; areas = [];
       resolve(promise.then((v1: any) => {
         console.log(v1);
-        let sql = "select apl.positionid,pp.name,apd.x,apd.y from apartmentpostiondraws apd inner join apartmentpostionlink apl on apl.id = apd.Apartmentpostionlinkid inner join projpositions pp on pp.Id = apl.positionid inner join rooms on rooms.apartmentid = apl.apartmentid and rooms.id = '#roomid#' order by apl.positionid";
+        let sql = "select apl.positionid,pp.name,apd.x,apd.y from apartmentpostiondraws apd inner join apartmentpostionlink apl on apl.id = apd.Apartmentpostionlinkid inner join projpositions pp on pp.Id = apl.positionid inner join rooms on rooms.apartmentid = apl.apartmentid and rooms.id = '#roomid#' order by apl.positionid,apd.Sortcode";
         sql = sql.replace('#roomid#', roomid);
         console.log(sql);
         return this.db.executeSql(sql, []);
@@ -1216,7 +1325,7 @@ export class initBaseDB {
           console.log(JSON.stringify(v2.rows.item(k)));
           itemdesc.push(v2.rows.item(k).Name);
         }
-        let sql = "select Id,NameAlias,Manager from vend where exists (select vendid from vendprojcheckscopes vpc where vpc.vendid = vend.id and vpc.roomid = '#roomid#' and vpc.ProjCheckItemId = '#checkitemid#') order by NameAlias";
+        let sql = "select Id,NameAlias,Manager,ManagerName,Phone from vend where exists (select vendid from vendprojcheckscopes vpc where vpc.vendid = vend.id and vpc.roomid = '#roomid#' and vpc.ProjCheckItemId = '#checkitemid#') order by NameAlias";
         sql = sql.replace('#roomid#', roomid);
         sql = sql.replace('#checkitemid#', checkitemid);
         console.log(sql);
@@ -1225,7 +1334,7 @@ export class initBaseDB {
         let tmpvend: Array<any>; tmpvend = [];
         for (let l = 0; l < v3.rows.length; l++) {
           console.log(JSON.stringify(v3.rows.item(l)));
-          vendlist.push({ id: v3.rows.item(l).Id, name: v3.rows.item(l).NameAlias, manager: v3.rows.item(l).Manager });
+          vendlist.push({ id: v3.rows.item(l).Id, name: v3.rows.item(l).NameAlias, manager: v3.rows.item(l).Manager, phone: v3.rows.item(l).Phone, managename: v3.rows.item(l).ManageName });
         }
         console.log(itemdesc);
         console.log(vendlist);
@@ -1235,6 +1344,50 @@ export class initBaseDB {
         throw '问题描述加载失败';
       }))
     })
+  }
+
+  getprojvendor(projid): Promise<any> {
+    return new Promise((resolve) => {
+      resolve(this.db.executeSql("select Id,NameAlias,Manager,Phone,ManagerName from vend where projid = '" + projid + "'", []).then(val => {
+        let vendlist: Array<any>; vendlist = [];
+        for (let l = 0; l < val.rows.length; l++) {
+          console.log(JSON.stringify(val.rows.item(l)));
+          vendlist.push({ id: val.rows.item(l).Id, name: val.rows.item(l).NameAlias, manager: val.rows.item(l).Manager, phone: val.rows.item(l).Phone, managename: val.rows.item(l).ManageName });
+        }
+        return vendlist;
+      }).catch(err => {
+        this.warn('项目供应商加载失败:' + err);
+        throw '项目供应商加载失败';
+      }))
+    })
+  }
+
+  //"projcheckitemdetails", "ProjId,Checkitemid,Name,Timelimit integer,Sortcode integer")
+  getduetime(projid, checitemid, issuedesc: Array<string>): Promise<any> {
+    return new Promise((resolve) => {
+      let promise = new Promise((resolve) => {
+        resolve(100);
+      });
+      let sql = "select max(Timelimit) as Timelimit from projcheckitemdetails where projid = '#projid#' and Checkitemid = '#Checkitemid#' and (#issuedesc#)";
+      sql = sql.replace('#projid#', projid).replace("#Checkitemid#", checitemid);
+      let descrange: string;
+      for (var i = 0; i < issuedesc.length; i++) {
+        if (i == 0) {
+          descrange = "Name = '" + issuedesc[i] + "'";
+        } else {
+          descrange += " or Name = '" + issuedesc[i] + "'";
+        }
+      }
+      sql = sql.replace('#issuedesc#', descrange);
+      console.log(sql);
+      resolve(promise.then((v1) => {
+        return this.db.executeSql(sql, []);
+      }).catch(err => {
+        this.warn('问题整改时限获取失败:' + err);
+        throw '问题整改时限获取失败';
+      }))
+    })
+
   }
 
   getroomdetails(roomid, batchid): Promise<any> {
@@ -1312,7 +1465,7 @@ export class initBaseDB {
     let promise = new Promise((resolve) => {
       resolve(100);
     });
-    let sc = ['待派单', 'darkviolet', '待整改', 'red', '已整改', 'blue', '已通过', 'green', '已作废', 'gray', '非正常关闭', 'yellow'];
+    let sc = ['待派单', 'darkviolet', '待整改', 'red', '已整改', 'blue', '已通过', 'green', '已作废', 'gray', '非正常关闭', 'orange'];
     return sc[sc.indexOf(status, 0) + 1];
   }
 
@@ -1323,6 +1476,642 @@ export class initBaseDB {
   updateIssue(sqls: Array<string>): Promise<any> {
     return new Promise((resolve) => {
       resolve(this.db.sqlBatch(sqls));
+    })
+  }
+
+  initbuilderData(data, projid): Promise<any> {
+    return new Promise((resolve) => {
+      let promise = new Promise((resolve) => {
+        resolve(100);
+      });
+      console.log("initbuilderData");
+      let tablename: Array<string>;
+      tablename = [];
+      resolve(promise.then((v1) => {
+        let tmppromise = Promise.resolve([]);
+        for (var i = 2; i < data.length; i += 2) {
+          let items = data[i];
+          console.log(items[0]);
+          if (data[i + 1].length > 0) {
+            let tmptbname = 'tmp' + items[0];
+            tablename.push(items[0]);
+            let tmpdata: Array<any>; tmpdata = [];
+            tmpdata = data[i + 1];
+            tmppromise = tmppromise.then(() => {
+              return this.resetdata(tmptbname);
+            }).then(v => {
+              return this.initBaseData(tmptbname, tmpdata);
+            })
+          }
+        }
+        return tmppromise;
+      }).then((v2: any) => {
+        let tablefield: Array<any>; tablefield = [];
+        tablefield.push("FormalCheckIssues"); tablefield.push("VersionId,BatchId,IssueId,RoomId,PositionName,CheckItemName,PlusDesc,IssueDesc,UrgencyId,ImgBefore1,ImgBefore2,ImgBefore3,ImgAfter1,ImgAfter2,ImgAfter3,Id,IssueStatus,VendId,ResponVendId,ProjId,Manager,ResponsibleId,IssueType,RegisterDate,AppointDate,LimitDate,ReFormDate,ReturnDate,ReturnReason,ReturnNum,BuildingId,EngineerId,ReviewDate,x,y,ResponsibleName,ResponsiblePhone,EngineerName,EngineerPhone,APImg,FloorName,BuildingName,RoomName,ManagerName,ManagerPhone,BatchName,ReassignDate,ReassignDesc,ReasonbyOver,fixedDesc,ImgWidth");
+        tablefield.push("ProjTeam"); tablefield.push("VendId,Name,Phone,ID,UserId,ProjId");
+        tablefield.push("FormalCheckLogs"); tablefield.push("BatchId,IssueId,IssueStatus,LogDate,UserId,UserName,Origin,DueDate,ReasonbyOver,IsReturn,ReturnReason,ProjId,VersionId,ID");
+        let tmppromise = Promise.resolve([]);
+        for (let k = 0; k < tablename.length; k++) {
+          console.log(tablename[k]);
+          let tn = tablename[k];
+          tmppromise = tmppromise.then(() => {
+            let sql: string;
+            if (tn == "ProjTeam") {
+              sql = "delete from ProjTeam where id like 'builder%' and projid = '" + projid + "'";
+            } else {
+              sql = "delete from #tablename# where exists (select ID from #tmptablename# where #tmptablename#.Id = #tablename#.Id)";
+              sql = sql.replace('#tablename#', tn);
+              sql = sql.replace('#tablename#', tn);
+              sql = sql.replace('#tmptablename#', 'tmp' + tn);
+              sql = sql.replace('#tmptablename#', 'tmp' + tn);
+            }
+            console.log(sql);
+            return this.db.executeSql(sql, []);
+          }).then(v => {
+            let sql: string;
+            if (tn == "FormalCheckIssues") {
+              sql = "insert into #tablename#( #fields# ) select #fields# from #tmptablename# where IssueStatus = '待派单' or IssueStatus = '待整改' or IssueStatus = '已整改'";
+            } else {
+              sql = "insert into #tablename#( #fields# ) select #fields# from #tmptablename#";
+            }
+            sql = sql.replace('#tablename#', tn);
+            sql = sql.replace('#tmptablename#', 'tmp' + tn);
+            let fieldstr = tablefield[tablefield.indexOf(tn, 0) + 1];
+            sql = sql.replace('#fields#', fieldstr);
+            sql = sql.replace('#fields#', fieldstr);
+            console.log(sql);
+            return this.db.executeSql(sql, []);
+          })
+          /////图片处理  "CustRoomSatisfactions", "RoomId,SatisfiedDim,HousingType,Score integer,ProjId,VersionId integer,Id,BatchId"          
+        }
+        return tmppromise;
+      }).then(v3 => {
+        //ImgBefore1,Imgbefore2,ImgBefore3,ImgAfter1,ImgAfter2,ImgAfter3,ImgClose1,ImgClose2,ImgClose3
+        let sql = "select imgbefore1 as fn from #tmptablename# where imgbefore1 != '' and imgbefore1 != 'NUll' and (IssueStatus = '待派单' or IssueStatus = '待整改' or IssueStatus = '已整改') and not exists (select projid from imagetable where imagetable.projid = '#projid#' and imagetable.fn = #tmptablename#.imgbefore1) ".replace('#tmptablename#', 'tmpFormalCheckIssues').replace('#tmptablename#', 'tmpFormalCheckIssues').replace('#projid#', projid);
+        sql += " union select imgbefore2 as fn from #tmptablename# where imgbefore2 != '' and imgbefore2 != 'NUll' and (IssueStatus = '待派单' or IssueStatus = '待整改' or IssueStatus = '已整改') and not exists (select projid from imagetable where imagetable.projid = '#projid#' and imagetable.fn = #tmptablename#.imgbefore2) ".replace('#tmptablename#', 'tmpFormalCheckIssues').replace('#tmptablename#', 'tmpFormalCheckIssues').replace('#projid#', projid);
+        sql += " union select imgbefore3 as fn from #tmptablename# where imgbefore3 != '' and imgbefore3 != 'NUll' and (IssueStatus = '待派单' or IssueStatus = '待整改' or IssueStatus = '已整改') and not exists (select projid from imagetable where imagetable.projid = '#projid#' and imagetable.fn = #tmptablename#.imgbefore3) ".replace('#tmptablename#', 'tmpFormalCheckIssues').replace('#tmptablename#', 'tmpFormalCheckIssues').replace('#projid#', projid);
+        sql += " union select ImgAfter1 as fn from #tmptablename# where ImgAfter1 != '' and ImgAfter1 != 'NUll' and (IssueStatus = '待派单' or IssueStatus = '待整改' or IssueStatus = '已整改') and not exists (select projid from imagetable where imagetable.projid = '#projid#' and imagetable.fn = #tmptablename#.ImgAfter1) ".replace('#tmptablename#', 'tmpFormalCheckIssues').replace('#tmptablename#', 'tmpFormalCheckIssues').replace('#projid#', projid);
+        sql += " union select ImgAfter2 as fn from #tmptablename# where ImgAfter2 != '' and ImgAfter2 != 'NUll' and (IssueStatus = '待派单' or IssueStatus = '待整改' or IssueStatus = '已整改') and not exists (select projid from imagetable where imagetable.projid = '#projid#' and imagetable.fn = #tmptablename#.ImgAfter2) ".replace('#tmptablename#', 'tmpFormalCheckIssues').replace('#tmptablename#', 'tmpFormalCheckIssues').replace('#projid#', projid);
+        sql += " union select ImgAfter3 as fn from #tmptablename# where ImgAfter3 != '' and ImgAfter3 != 'NUll' and (IssueStatus = '待派单' or IssueStatus = '待整改' or IssueStatus = '已整改') and not exists (select projid from imagetable where imagetable.projid = '#projid#' and imagetable.fn = #tmptablename#.ImgAfter3) ".replace('#tmptablename#', 'tmpFormalCheckIssues').replace('#tmptablename#', 'tmpFormalCheckIssues').replace('#projid#', projid);
+        sql += " union select APImg as fn from #tmptablename# where APImg != '' and APImg != 'NUll' and (IssueStatus = '待派单' or IssueStatus = '待整改' or IssueStatus = '已整改') and not exists (select projid from imagetable where imagetable.projid = '#projid#' and imagetable.fn = #tmptablename#.APImg) group by APImg ".replace('#tmptablename#', 'tmpFormalCheckIssues').replace('#tmptablename#', 'tmpFormalCheckIssues').replace('#projid#', projid);
+        console.log(sql);
+        return this.db.executeSql(sql, []);
+      }).then((v4: any) => {
+        console.log("v4:" + v4);
+        let tmppromise = Promise.resolve([]);
+        for (var j = 0; j < v4.rows.length; j++) {
+          console.log(JSON.stringify(v4.rows.item(j)));
+          let fn = v4.rows.item(j).fn;
+          tmppromise = tmppromise.then(() => {
+            return this.downloadimg(fn);
+          }).then(val => {
+            return this.db.executeSql("insert into imagetable (projid,fn,src) values ('" + projid + "','" + fn + "','" + val + "')", []);
+          })
+        }
+        return tmppromise;
+      }).then(v5 => {
+        console.log(data[1][0]);
+        let sql = "update projversion set lastdate = '#lastdate#',needupd = 0 where projid = '#projid#'";
+        sql = sql.replace('#projid#', projid);
+        sql = sql.replace('#lastdate#', data[1][0]);
+        console.log('updbdata:' + sql);
+        return this.db.executeSql(sql, []);
+      }).then(v5 => {
+        let tmppromise = Promise.resolve([]);
+        console.log("v5"); console.log(tablename.length);
+        for (var x = 0; x < tablename.length; x++) {
+          console.log(tablename[x]);
+          let tn = tablename[x];
+          tmppromise = tmppromise.then(() => {
+            return this.resetprojdata("tmp" + tn, projid);
+          }).then(v => {
+            return [1];
+          })
+        }
+        return tmppromise;
+      }).catch(err => {
+        console.log(err);
+      }))
+    })
+  }
+
+  downloadbuilderdata(token, projid): Promise<any> {
+    return new Promise((resolve) => {
+      this.existstable("ProjTeam").then(counts => {
+        if (counts == 0) {
+          let promise = new Promise((resolve) => {
+            resolve(100);
+          });
+          resolve(promise.then((v1) => {
+            return this.initBaseTable("ProjTeam", "VendId,Name,Phone,ID,UserId,ProjId");
+          }).then((v2) => {
+            return this.initBaseTable("FormalCheckIssues", "VersionId integer,BatchId,IssueId,RoomId,PositionName,CheckItemName,PlusDesc,IssueDesc,UrgencyId,ImgBefore1,ImgBefore2,ImgBefore3,ImgAfter1,ImgAfter2,ImgAfter3,Id primary key,IssueStatus,VendId,ResponVendId,ProjId,Manager,ResponsibleId,IssueType,RegisterDate datetime,AppointDate datetime,LimitDate datetime,ReFormDate datetime,ReturnDate datetime,ReturnReason,ReturnNum integer default 0 ,BuildingId,EngineerId,ReviewDate datetime,x integer,y integer,ResponsibleName,ResponsiblePhone,EngineerName,EngineerPhone,APImg,FloorName,BuildingName,RoomName,ManagerName,ManagerPhone,BatchName,ReassignDate datetime,ReassignDesc,ReasonbyOver,fixedDesc,ImgWidth integer");
+          }).then((v3) => {
+            return this.initBaseTable("FormalCheckLogs", "BatchId,IssueId,IssueStatus,LogDate datetime,UserId,UserName,Origin default 'APP',DueDate datetime,ReasonbyOver,IsReturn integer default 0, ReturnReason,ProjId,VersionId,ID");
+          }).then((v4) => {
+            return this.initBaseTable("tmpFormalCheckIssues", "VersionId integer,BatchId,IssueId,RoomId,PositionName,CheckItemName,PlusDesc,IssueDesc,UrgencyId,ImgBefore1,ImgBefore2,ImgBefore3,ImgAfter1,ImgAfter2,ImgAfter3,Id primary key,IssueStatus,VendId,ResponVendId,ProjId,Manager,ResponsibleId,IssueType,RegisterDate datetime,AppointDate datetime,LimitDate datetime,ReFormDate datetime,ReturnDate datetime,ReturnReason,ReturnNum integer default 0 ,BuildingId,EngineerId,ReviewDate datetime,x integer,y integer,ResponsibleName,ResponsiblePhone,EngineerName,EngineerPhone,APImg,FloorName,BuildingName,RoomName,ManagerName,ManagerPhone,BatchName,ReassignDate datetime,ReassignDesc,ReasonbyOver,fixedDesc,ImgWidth integer");
+          }).then((v5) => {
+            return this.initBaseTable("tmpFormalCheckLogs", "BatchId,IssueId,IssueStatus,LogDate datetime,UserId,UserName,Origin default 'APP',DueDate datetime,ReasonbyOver,IsReturn integer default 0, ReturnReason,ProjId,VersionId,ID");
+          }).then((v6) => {
+            return this.initBaseTable("uplFormalCheckIssues", "BatchId,IssueId,RoomId,PositionId,CheckItemId,PlusDesc,IssueDesc,UrgencyId,ImgBefore1,ImgBefore2,ImgBefore3,ImgAfter1,ImgAfter2,ImgAfter3,Id primary key,IssueStatus,VendId,ResponVendId,ProjId,Manager,ResponsibleId,IssueType,RegisterDate datetime,AppointDate datetime,LimitDate datetime,ReFormDate datetime,CloseDate datetime,CloseReason,CancelDate datetime,CancelReason,VersionId integer,ImgClose1,ImgClose2,ImgClose3,ReturnDate datetime,ReturnReason,ReturnNum integer,BuildingId,EngineerId,ReviewDate datetime,x integer,y integer,ResponsibleName,ResponsiblePhone,EngineerName,EngineerPhone,ManagerName,ManagerPhone,ReassignDate datetime,ReassignDesc,ReasonbyOver,fixedDesc");
+          }).then((v7) => {
+            return this.initBaseTable("tmpProjTeam", "VendId,Name,Phone,ID,UserId,ProjId");
+          }).then((v7) => {
+            return this.initBaseTable("uplimagetable", "Projid,fn");
+          }).then((v7) => {
+            return this.initBaseTable("imagetable", "projid,fn,src,status integer default 0");
+          }).then((v8) => {
+            console.log("downloadbuilderdata");
+
+            return this.httpService.get(APP_SERVE_URL + "/VendPack", { Token: token, projId: projid, appDateStr: null });
+          }).then((v9) => {
+            return this.initbuilderData(v9[0], projid);
+          }).catch(err => {
+            console.log(err);
+            this.nativeservice.hideLoading();
+            throw '下载失败';
+          }))
+        }
+        else {
+          let promise = new Promise((resolve) => {
+            resolve(100);
+          });
+          resolve(promise.then((v1) => {
+            return this.resetprojdata("tmpFormalCheckIssues", projid);
+          }).then((v2) => {
+            return this.resetprojdata("tmpFormalCheckLogs", projid);
+          }).then((v3) => {
+            return this.resetprojdata("tmpProjTeam", projid);
+          }).then((v4) => {
+            return this.db.executeSql("select LastDate from projversion where projid = '" + projid + "'", []);
+          }).then((v5: any) => {
+            let lastdate: string; lastdate = "";
+            lastdate = v5.rows.item(0).LastDate; console.log(lastdate);
+            return this.httpService.get(APP_SERVE_URL + "/VendPack", { Token: token, projId: projid, appDateStr: lastdate });
+          }).then((v6) => {
+            return this.initbuilderData(v6[0], projid);
+          }).catch(err => {
+            console.log(err);
+            this.nativeservice.hideLoading();
+            throw '下载失败';
+          }))
+        }
+      })
+    })
+  }
+
+  uploadbuilderdata(projid, tablenames: Array<string>): Promise<any> {
+    return new Promise((resolve) => {
+      console.log('uploaddata');
+      let jsonarr: Array<any>; jsonarr = [];
+      let tmppromise = Promise.resolve([]);
+      console.log(tablenames);
+      for (var i = 0; i < tablenames.length; i++) {
+        let tablename = tablenames[i];
+        console.log(tablename);
+        tmppromise = tmppromise.then(() => {
+          let sql: string;
+          console.log(tablename + ";" + i);
+          if (tablename == "FormalCheckIssues") {
+            sql = "select * from upl#tablename# where projid = '#projid#'";
+            sql = sql.replace('#tablename#', tablename);
+            sql = sql.replace('#projid#', projid);
+          } else {
+            sql = "select * from #tablename# where projid = '#projid#' and versionid = 0 ";
+            sql = sql.replace('#tablename#', tablename);
+            sql = sql.replace('#projid#', projid);
+          }
+          console.log(sql);
+          return this.db.executeSql(sql, []);
+        }).then((v: any) => {
+          let data: Array<any>; data = [];
+          for (let j = 0; j < v.rows.length; j++) {
+            console.log(JSON.stringify(v.rows.item(j)));
+            data.push(v.rows.item(j));
+          }
+          if (v.rows.length > 0) {
+            console.log(data);
+            jsonarr.push({ TableName: tablename, data: data });
+          }
+          console.log("jsonarr:" + jsonarr.length);
+          return jsonarr;
+        })
+      }
+      resolve(tmppromise);
+    })
+  }
+
+  uploadbuilderinfo(token, projid): Promise<any> {
+    return new Promise((resolve) => {
+      let promise = new Promise((resolve) => {
+        resolve(100);
+      });
+      console.log("uploadbuildinginfo");
+      resolve(promise.then((v) => {
+        let sql = "select upl.fn,it.src from uplimagetable upl inner join imagetable it on it.fn = upl.fn and it.projid = upl.projid  where upl.projid = '#projid#'";
+        sql = sql.replace('#projid#', projid);
+        console.log(sql);
+        return this.db.executeSql(sql, []);
+      }).then((val: any) => {
+        let tmppromise = Promise.resolve(10);
+        for (var i = 0; i < val.rows.length; i++) {
+          console.log(JSON.stringify(val.rows.item(i)))
+          let filename = val.rows.item(i).fn;
+          let src = val.rows.item(i).src;
+          tmppromise = tmppromise.then(() => {
+            return this.uploadimg(src, filename);
+          }).then((v) => {
+            return 1;
+          })
+        }
+        return tmppromise;
+      }).then((v1) => {
+        return this.uploadbuilderdata(projid, ["FormalCheckIssues", "FormalCheckLogs"]);
+      }).then((v2) => {
+        console.log("v2:" + v2);
+        console.log("v2:" + JSON.stringify(v2));
+        return this.httpService.post(APP_SERVE_URL + "/DynamicsPack", { Token: token, ProjId: projid, BatchId: null, BuildingId: null, JsonStr: JSON.stringify(v2) });
+      }).then((v3) => {
+        console.log("v3");
+        return this.resetuploadbuilderdata(projid, ["FormalCheckIssues", "FormalCheckLogs"]);
+      }).then((v4) => {
+        console.log('v4');
+        let sql = "delete from uplimagetable where projid = '#projid#'";
+        sql = sql.replace('#projid#', projid);
+        console.log(sql);
+        return this.db.executeSql(sql, []);
+      }).then((v5) => {
+        console.log('v5')
+        return this.downloadbuilderdata(token, projid);
+      }).catch(err => {
+        this.nativeservice.hideLoading();
+        console.log("楼栋上传失败:" + err);
+        throw '';
+      }))
+    })
+  }
+
+  resetuploadbuilderdata(projid, tablenames: Array<string>): Promise<any> {
+    return new Promise((resolve) => {
+      var jsonarr: Array<any>; jsonarr = [];
+      let tmppromise = Promise.resolve([]);
+      for (var i = 0; i < tablenames.length; i++) {
+        let tablename = tablenames[i];
+        console.log('reset up' + tablename);
+        tmppromise = tmppromise.then(() => {
+          let sql = "delete from #tablename# where projid = '#projid#' and versionid = 0";
+          sql = sql.replace('#tablename#', tablename)
+          sql = sql.replace('#projid#', projid);
+          return this.db.executeSql(sql, []);
+        }).then((v) => {
+          if (tablename == "FormalCheckIssues") {
+            let sql = "delete from upl#tablename# where projid = '#projid#'";
+            sql = sql.replace('#tablename#', tablename)
+            sql = sql.replace('#projid#', projid);
+            return this.db.executeSql(sql, []);
+          } else {
+            return 1;
+          }
+        })
+      }
+      resolve(tmppromise);
+    })
+  }
+
+  getbuilderissuelist(projid, type): Promise<Array<any>> {
+    return new Promise((resolve) => {
+      let promise = new Promise((resolve) => {
+        resolve(100);
+      });
+      let needupd: boolean; needupd = false;
+      console.log("builderissuelist");
+      resolve(promise.then(v => {
+        let sql = "select needupd from projversion where projid = '#projid#'".replace('#projid#', projid);
+        return this.db.executeSql(sql, []);
+      }).then((v1: any) => {
+        if (v1 && v1.rows.length > 0) {
+          needupd = v1.rows.item(0).Needupd;
+        }
+        let sql = "select iss.Id,3 as type,iss.IssueId,iss.batchname,iss.BuildingName,iss.FloorName,iss.RoomName,iss.IssueStatus,iss.PositionName,iss.CheckItemName,iss.IssueDesc,iss.ResponsibleName,iss.ReturnNum,iss.LimitDate,iss.ReFormDate,iss.ReturnDate from FormalCheckIssues iss where iss.projid = '#projid#'";
+        sql = sql.replace('#projid#', projid);
+        console.log(sql);
+        return this.db.executeSql(sql, []);
+      }).then((v2: any) => {
+        console.log(v2);
+        if (v2 && v2.rows && v2.rows.length > 0) {
+          let forass: Array<any>; forass = [];
+          let forfix: Array<any>; forfix = [];
+          let fixed: Array<any>; fixed = [];
+          let returned: Array<any>; returned = [];
+          let dpd = 0, dzg = 0, yzg = 0, bth = 0;
+          let status: string;
+          for (var i = 0; i < v2.rows.length; i++) {
+            console.log(JSON.stringify(v2.rows.item(i)));
+            let now = new Date();
+            let dt = new Date(v2.rows.item(i).LimitDate);
+            let days = 0;
+            if (now > dt) {
+              days = Math.round((now.getTime() - dt.getTime()) / 1000 / 3600 / 24);
+            }
+            status = v2.rows.item(i).IssueStatus;
+            console.log(status)
+            if (status == "待派单") {
+              console.log("1" + status);
+              dpd++;
+              forass.push({ selected: false, type: v2.rows.item(i).type, id: v2.rows.item(i).Id, batchname: v2.rows.item(i).BatchName, floorname: v2.rows.item(i).FloorName, roomname: v2.rows.item(i).RoomName, buildingname: v2.rows.item(i).BuildingName, status: status, position: v2.rows.item(i).PositionName, checkitem: v2.rows.item(i).CheckItemName, issueid: v2.rows.item(i).IssueId, IssueDesc: v2.rows.item(i).IssueDesc, ResponsibleName: v2.rows.item(i).ResponsibleName, datestr: "整改时限", date: dt.toLocaleString(), overdays: days, returntimes: v2.rows.item(i).ReturnNum });
+            } else if (status == "待整改") {
+              console.log("2" + status);
+              dzg++;
+              forfix.push({ selected: false, type: v2.rows.item(i).type, id: v2.rows.item(i).Id, batchname: v2.rows.item(i).BatchName, floorname: v2.rows.item(i).FloorName, roomname: v2.rows.item(i).RoomName, buildingname: v2.rows.item(i).BuildingName, status: status, position: v2.rows.item(i).PositionName, checkitem: v2.rows.item(i).CheckItemName, issueid: v2.rows.item(i).IssueId, IssueDesc: v2.rows.item(i).IssueDesc, ResponsibleName: v2.rows.item(i).ResponsibleName, datestr: "整改时限", date: dt.toLocaleString(), overdays: days, returntimes: v2.rows.item(i).ReturnNum });
+            } else if (status == "已整改") {
+              console.log("3" + status);
+              yzg++;
+              dt = new Date(v2.rows.item(i).ReFormDate);
+              fixed.push({ selected: false, type: v2.rows.item(i).type, id: v2.rows.item(i).Id, batchname: v2.rows.item(i).BatchName, floorname: v2.rows.item(i).FloorName, roomname: v2.rows.item(i).RoomName, buildingname: v2.rows.item(i).BuildingName, status: status, position: v2.rows.item(i).PositionName, checkitem: v2.rows.item(i).CheckItemName, issueid: v2.rows.item(i).IssueId, IssueDesc: v2.rows.item(i).IssueDesc, ResponsibleName: v2.rows.item(i).ResponsibleName, datestr: "已整改", date: dt.toLocaleString(), overdays: days, returntimes: v2.rows.item(i).ReturnNum });
+            }
+            if (status != "已整改" && v2.rows.item(i).ReturnDate) {
+              console.log("4" + status);
+              bth++;
+              dt = new Date(v2.rows.item(i).ReturnDate);
+              returned.push({ selected: false, type: v2.rows.item(i).type, id: v2.rows.item(i).Id, batchname: v2.rows.item(i).BatchName, floorname: v2.rows.item(i).FloorName, roomname: v2.rows.item(i).RoomName, buildingname: v2.rows.item(i).BuildingName, status: status, position: v2.rows.item(i).PositionName, checkitem: v2.rows.item(i).CheckItemName, issueid: v2.rows.item(i).IssueId, IssueDesc: v2.rows.item(i).IssueDesc, ResponsibleName: v2.rows.item(i).ResponsibleName, datestr: "已退回", duedate: dt.toLocaleString(), overdays: days, returntimes: v2.rows.item(i).ReturnNum });
+            }
+            console.log(v2.rows.item(i).ReturnNum);
+            console.log(dt.toLocaleDateString());
+            console.log(dt.toLocaleString());
+            console.log(dpd + ";" + dzg + ";" + yzg + ";" + bth);
+          }
+          console.log(forass); console.log(dpd + ";" + dzg + ";" + yzg + ";" + bth);
+          return [forass, forfix, fixed, returned, dpd, dzg, yzg, bth, needupd];
+        } else {
+          return [[], [], [], [], 0, 0, 0, 0, needupd];
+        }
+      }).catch(err => {
+        this.warn('问题加载失败:' + err);
+        throw '问题加载失败';
+      }))
+    })
+  }
+
+  getbuilderissueinfo(issueid, type): Promise<any> {
+    return new Promise((resolve) => {
+      let promise = new Promise((resolve) => {
+        resolve(100);
+      });
+      let ret = [];
+      resolve(promise.then((v1) => {
+        let sql = "select iss.ImgBefore1,iss.ImgBefore2,iss.ImgBefore3,iss.ImgAfter1,iss.ImgAfter2,iss.ImgAfter3,iss.IssueStatus,iss.AppointDate,iss.LimitDate,iss.RegisterDate from #tablename# iss where iss.Id = '#issueid#'";
+        if (type == 3) {
+          sql = sql.replace('#tablename#', 'FormalCheckIssues');
+        }
+        sql = sql.replace('#issueid#', issueid);
+        console.log(sql);
+        return this.db.executeSql(sql, []);
+      }).then((v2: any) => {
+        ret.push(v2);
+        let sql = "select LogDate,UserName,ReturnReason from #tablename# where IssueId = '#issueid#' and IsReturn = 1";
+        if (type == 3) {
+          sql = sql.replace('#tablename#', 'FormalCheckLogs');
+        }
+        sql = sql.replace('#issueid#', issueid);
+        return this.db.executeSql(sql, []);
+      }).then((v3: any) => {
+        ret.push(v3);
+        return ret;
+      }).catch(err => {
+        this.warn('问题加载失败:' + err);
+        throw '问题加载失败';
+      }))
+    })
+  }
+
+  getissuePositionImg(issueid, type): Promise<any> {
+    return new Promise((resolve) => {
+      let promise = new Promise((resolve) => {
+        resolve(100);
+      });
+      let ret = [];
+      resolve(promise.then((v1) => {
+        let sql = "select imagetable.src,iss.IssueStatus,iss.ImgWidth,iss.X,iss.Y from #tablename# iss inner join imagetable on imagetable.fn = iss.APImg where Id = '#issueid#'";
+        if (type == 3) {
+          sql = sql.replace('#tablename#', 'FormalCheckIssues');
+        }
+        sql = sql.replace('#issueid#', issueid);
+        console.log(sql);
+        return this.db.executeSql(sql, []);
+      }).catch(err => {
+        this.warn('问题坐标加载失败:' + err);
+        throw '问题坐标加载失败';
+      }))
+    })
+  }
+
+  //"VendId,Name,Phone,ID,UserId,ProjId"
+  getProjTeam(projid): Promise<any> {
+    return new Promise((resolve) => {
+      let promise = new Promise((resolve) => {
+        resolve(100);
+      });
+      console.log("builderissuelist");
+      resolve(promise.then((v1) => {
+        let sql = "select UserId,Name,Phone from projteam where projid = '" + projid + "'";
+        console.log(sql);
+        return this.db.executeSql(sql, []);
+      }).then((v2: any) => {
+        let teammembers = [];
+        for (var i = 0; i < v2.rows.length; i++) {
+          teammembers.push({ userid: v2.rows.item(i).UserId, name: v2.rows.item(i).Name, phone: v2.rows.item(i).Phone });
+        }
+        return teammembers;
+      }).catch(err => {
+        this.warn('项目团队加载失败:' + err);
+        throw '项目团队加载失败';
+      }))
+    })
+  }
+  //BatchId,IssueId,IssueStatus,LogDate,UserId,UserName,Origin,DueDate,ReasonbyOver,IsReturn,ReturnReason,ProjId,VersionId,ID
+  updateResponsible(projid, idranges, staff, username, userid): Promise<any> {
+    return new Promise((resolve) => {
+      let promise = new Promise((resolve) => {
+        resolve(100);
+      });
+      console.log("updateResponsibleName");
+      resolve(promise.then((v1) => {
+        let sqls = [];
+        let sql = "update #tablename# set AppointDate = datetime('now', 'localtime'),issuestatus = '待整改',ResponsibleId ='#userid#', ResponsibleName = '#name#',ResponsiblePhone = '#phone#' where projid = '#projid#' and id in (#idranges#)";
+        let usql = sql.replace('#tablename#', 'FormalCheckIssues').replace('#name#', staff.name).replace('#phone#', staff.phone).replace('#projid#', projid).replace('#idranges#', idranges).replace('#userid#', staff.userid);
+        sqls.push(usql);
+        sql = "delete from upl#tablename# where projid = '#projid#' and id in (#idranges#)";
+        usql = sql.replace('#tablename#', 'FormalCheckIssues').replace('#projid#', projid).replace('#idranges#', idranges);
+        sqls.push(usql);
+        sql = "insert into #upltablename# (Id,BatchId,RoomId,ProjId,VersionId,BuildingId,IssueStatus,ResponsibleName,ResponsiblePhone,AppointDate) select Id,BatchId,RoomId,ProjId,VersionId,BuildingId,IssueStatus,ResponsibleName,ResponsiblePhone,AppointDate from #tablename# where projid = '#projid#' and id in (#idranges#)";
+        usql = sql.replace('#upltablename#', 'uplFormalCheckIssues').replace('#tablename#', 'FormalCheckIssues').replace('#projid#', projid).replace('#idranges#', idranges);
+        sqls.push(usql);
+        sql = "update projversion set needupd = 1 where projid = '#projid#'";
+        usql = sql.replace('#projid#', projid);
+        sqls.push(usql);
+        // sql = "insert into #tablename# (BatchId,IssueId,IssueStatus,LogDate,UserId,UserName,ProjId,VersionId) select BatchId,ID,IssueStatus,AppointDate,'#userid#','#username#',projid,0 from #issuetable# where projid = '#projid#' and id in (#idranges#)";
+        // usql = sql.replace('#tablename#', 'FormalCheckLogs').replace('#issuetable#', 'FormalCheckIssues').replace('#projid#', projid).replace('#idranges#', idranges).replace('#userid#', userid).replace('#username#', username);
+        // sqls.push(usql);
+        console.log(sqls);
+        return this.db.sqlBatch(sqls);
+      }).then((v2) => {
+        return 1;
+      }).catch(err => {
+        this.warn('指派失败:' + err);
+        throw '指派失败';
+      }))
+    })
+  }
+
+  updateFixedCompleteSingle(projid, issueid, images, fixeddesc, overreason, username, userid): Promise<any> {
+    return new Promise((resolve) => {
+      let promise = new Promise((resolve) => {
+        resolve(100);
+      });
+      let imgfn = [];
+      console.log("updateFixedComplete");
+      resolve(promise.then(v => {
+        let sqls = [];
+        images.forEach((val: string) => {
+          if (val) {
+            let tmpstr = 'data:image/jpeg;base64,';
+            val = val.replace(tmpstr, '');
+            let filename = Md5.hashStr(val).toString() + '.jpeg';//+ ext;//'11.jpg';//			
+            let sql = " insert into imagetable (projid,fn,src) values('" + projid + "','" + filename + "','" + val + "'); ";
+            sqls.push(sql);
+            sql = " insert into uplimagetable (projid,fn) values ('" + projid + "','" + filename + "'); ";
+            sqls.push(sql);
+            imgfn.push(filename);
+          }
+        })
+        console.log(sqls);
+        return this.db.sqlBatch(sqls);
+      }).then((v1) => {
+        let setimg = '';
+        if (imgfn) {
+          for (var i = 0; i < imgfn.length; i++) {
+            setimg += ",ImgAfter" + (i + 1).toString() + "='" + imgfn[i] + "'";
+            console.log(setimg);
+          }
+        }
+        let sqls = [];
+        let sql = "update #tablename# set fixeddesc = '#fixeddesc#',ReasonbyOver = '#overreason#', ReFormDate = datetime('now', 'localtime'),issuestatus = '已整改' #img# where projid = '#projid#' and id = '#issueid#'";
+        let usql = sql.replace('#tablename#', 'FormalCheckIssues').replace('#projid#', projid).replace('#issueid#', issueid).replace('#img#', setimg).replace('#fixeddesc#', fixeddesc).replace('#ReasonbyOver#', overreason);
+        sqls.push(usql);
+        sql = "delete from upl#tablename# where projid = '#projid#' and id = '#issueid#'";
+        usql = sql.replace('#tablename#', 'FormalCheckIssues').replace('#projid#', projid).replace('#issueid#', issueid);
+        sqls.push(usql);
+        sql = "insert into #upltablename# (Id,BatchId,RoomId,ProjId,VersionId,BuildingId,IssueStatus,ResponsibleName,ResponsiblePhone,AppointDate,ReFormDate,ImgAfter1,ImgAfter2,ImgAfter3,fixeddesc,ReasonbyOver) select Id,BatchId,RoomId,ProjId,VersionId,BuildingId,IssueStatus,ResponsibleName,ResponsiblePhone,AppointDate,ReFormDate,ImgAfter1,ImgAfter2,ImgAfter3,fixeddesc,ReasonbyOver from #tablename# where projid = '#projid#' and id = '#issueid#'";
+        usql = sql.replace('#upltablename#', 'uplFormalCheckIssues').replace('#tablename#', 'FormalCheckIssues').replace('#projid#', projid).replace('#issueid#', issueid);
+        sqls.push(usql);
+        sql = "update projversion set needupd = 1 where projid = '#projid#'";
+        usql = sql.replace('#projid#', projid);
+        sqls.push(usql);
+        // sql = "insert into #tablename# (BatchId,IssueId,IssueStatus,LogDate,UserId,UserName,ProjId,VersionId) select BatchId,ID,IssueStatus,ReFormDate,'#userid#','#username#',projid,0 from #issuetable# where projid = '#projid#' and id in (#idranges#)";
+        // usql = sql.replace('#tablename#', 'FormalCheckLogs').replace('#issuetable#', 'FormalCheckIssues').replace('#projid#', projid).replace('#idranges#', idranges).replace('#userid#', userid).replace('#username#', username);
+        // sqls.push(usql);
+        console.log(sqls);
+        return this.db.sqlBatch(sqls);
+      }).then((v2) => {
+        return 1;
+      }).catch(err => {
+        this.warn('提交整改完成失败:' + err);
+        throw '提交整改完成失败';
+      }))
+    })
+  }
+
+  updateFixedCompleteMutil(projid, idranges, username, userid): Promise<any> {
+    return new Promise((resolve) => {
+      let promise = new Promise((resolve) => {
+        resolve(100);
+      });
+      console.log("updateFixedComplete");
+      resolve(promise.then((v1) => {
+        let sqls = [];
+        let sql = "update #tablename# set ReFormDate = datetime('now', 'localtime'),issuestatus = '已整改' where projid = '#projid#' and id in (#idranges#)";
+        let usql = sql.replace('#tablename#', 'FormalCheckIssues').replace('#projid#', projid).replace('#idranges#', idranges);
+        sqls.push(usql);
+        sql = "delete from upl#tablename# where projid = '#projid#' and id in (#idranges#)";
+        usql = sql.replace('#tablename#', 'FormalCheckIssues').replace('#projid#', projid).replace('#idranges#', idranges);
+        sqls.push(usql);
+        sql = "insert into #upltablename# (Id,BatchId,RoomId,ProjId,VersionId,BuildingId,IssueStatus,ResponsibleName,ResponsiblePhone,AppointDate,ReFormDate) select Id,BatchId,RoomId,ProjId,VersionId,BuildingId,IssueStatus,ResponsibleName,ResponsiblePhone,AppointDate,ReFormDate from #tablename# where projid = '#projid#' and id in (#idranges#)";
+        usql = sql.replace('#upltablename#', 'uplFormalCheckIssues').replace('#tablename#', 'FormalCheckIssues').replace('#projid#', projid).replace('#idranges#', idranges);
+        sqls.push(usql);
+        sql = "update projversion set needupd = 1 where projid = '#projid#'";
+        usql = sql.replace('#projid#', projid);
+        sqls.push(usql);
+        // sql = "insert into #tablename# (BatchId,IssueId,IssueStatus,LogDate,UserId,UserName,ProjId,VersionId) select BatchId,ID,IssueStatus,ReFormDate,'#userid#','#username#',projid,0 from #issuetable# where projid = '#projid#' and id in (#idranges#)";
+        // usql = sql.replace('#tablename#', 'FormalCheckLogs').replace('#issuetable#', 'FormalCheckIssues').replace('#projid#', projid).replace('#idranges#', idranges).replace('#userid#', userid).replace('#username#', username);
+        // sqls.push(usql);
+        console.log(sqls);
+        return this.db.sqlBatch(sqls);
+      }).then((v2) => {
+        return 1;
+      }).catch(err => {
+        this.warn('提交整改完成失败:' + err);
+        throw '提交整改完成失败';
+      }))
+    })
+  }
+
+  returnassign(projid, issueid, username, userid, result, type): Promise<any> {
+    return new Promise((resolve) => {
+      let promise = new Promise((resolve) => {
+        resolve(100);
+      });
+      console.log("returnassign");
+      resolve(promise.then((v1) => {
+        let sqls = [];
+        let sql = "update #tablename# set ReassignDate = datetime('now', 'localtime'),ReassignDesc = '#reason#',AppointDate = '',issuestatus = '待派单',ResponVendId = '',ResponsibleName = '',ResponsiblePhone = '' where projid = '#projid#' and id = '#issueid#'";
+        let usql = sql.replace('#tablename#', 'FormalCheckIssues').replace('#projid#', projid).replace('#issueid#', issueid).replace('#reason#', result);
+        sqls.push(usql);
+        sql = "delete from upl#tablename# where projid = '#projid#' and id = '#issueid#'";
+        usql = sql.replace('#tablename#', 'FormalCheckIssues').replace('#projid#', projid).replace('#issueid#', issueid);
+        sqls.push(usql);
+        sql = "insert into #upltablename# (Id,BatchId,RoomId,ProjId,VersionId,BuildingId,IssueStatus,ResponsibleName,ResponsiblePhone,AppointDate,ReassignDate,ReassignDesc) select Id,BatchId,RoomId,ProjId,VersionId,BuildingId,IssueStatus,ResponsibleName,ResponsiblePhone,AppointDate,ReassignDate,ReassignDesc from #tablename# where projid = '#projid#' and id = '#issueid#'";
+        usql = sql.replace('#upltablename#', 'uplFormalCheckIssues').replace('#tablename#', 'FormalCheckIssues').replace('#projid#', projid).replace('#issueid#', issueid);
+        sqls.push(usql);
+        sql = "update projversion set needupd = 1 where projid = '#projid#'";
+        usql = sql.replace('#projid#', projid);
+        sqls.push(usql);
+        // sql = "insert into #tablename# (BatchId,IssueId,IssueStatus,LogDate,UserId,UserName,ProjId,VersionId) select BatchId,ID,IssueStatus,AppointDate,'#userid#','#username#',projid,0 from #issuetable# where projid = '#projid#' and id = '#issueid#'";
+        // usql = sql.replace('#tablename#', 'FormalCheckLogs').replace('#issuetable#', 'FormalCheckIssues').replace('#projid#', projid).replace('#issueid#', issueid).replace('#userid#', userid).replace('#username#', username);
+        // sqls.push(usql);
+        console.log(sqls);
+        return this.db.sqlBatch(sqls);
+      }).then((v2) => {
+        return 1;
+      }).catch(err => {
+        this.warn('退回指派失败:' + err);
+        throw '退回指派失败';
+      }))
+    })
+  }
+
+  addProjTeamMembers(projid, phone, values): Promise<any> {
+    return new Promise((resolve) => {
+      let promise = new Promise((resolve) => {
+        resolve(100);
+      });
+      console.log("addProjTeamMembers");
+      resolve(promise.then((v1) => {
+        let sql = "select Phone from projteam where projid = '" + projid + "' and phone = " + phone.toString();
+        console.log(sql);
+        return this.db.executeSql(sql, []);
+      }).then((v2: any) => {
+        if (v2 && v2.rows.length > 0) {
+          return 10;
+        } else {
+          let sql = "insert into ProjTeam(Id,projid,userid,phone,name) values (#values#)";
+          sql = sql.replace("#values#", values);
+          console.log(sql);
+          return this.db.executeSql(sql, []);
+        }
+      }).catch(err => {
+        this.warn('提交团队成员失败:' + err);
+        throw '提交团队成员失败';
+      }))
     })
   }
 
@@ -1390,49 +2179,77 @@ export class initBaseDB {
     })
   }
 
-  cleardynamicData(): Promise<any> {
+  cleardynamicData(vendrole: boolean): Promise<any> {
     return new Promise((resolve) => {
       //let filename = Md5.hashStr(src).toString() + ext;//'11.jpg';//
       console.log("clearData");
       let promise = new Promise((resolve) => {
         resolve(100);
       });
-      resolve(promise.then((v1) => {
-        return this.resetdata("tmpprojversion");
-      }).then((v2) => {
-        return this.resetdata("uplimagetable");
-      }).then((v3) => {
-        return this.resetdata("tmpbuildingversion");
-      }).then((v5) => {
-        return this.resetdata("FormalCheckBatchRooms");
-      }).then((v6) => {
-        return this.resetdata("Rooms");
-      }).then((v1) => {
-        return this.resetdata("FormalCheckIssues");
-      }).then((v2) => {
-        return this.resetdata("tmpFormalCheckIssues");
-      }).then((v3) => {
-        return this.resetdata("uplFormalCheckIssues");
-      }).then((v5) => {
-        return this.resetdata("CustRoomSatisfactions");
-      }).then((v6) => {
-        return this.resetdata("tmpCustRoomSatisfactions");
-      }).then((v1) => {
-        return this.resetdata("RoomNoAcceptLogs");
-      }).then((v2) => {
-        return this.resetdata("tmpRoomNoAcceptLogs");
-      }).then((v3) => {
-        return this.resetdata("FormalRoomDetails");
-      }).then((v5) => {
-        return this.resetdata("tmpFormalRoomDetails");
-      }).then((v6) => {
-        console.log('vt6');
-        return this.db.executeSql("update buildingversion set needupd = 1, needdownload = 1, versionid = 0",[]);
-      }).then((v6) => {
-        return this.db.executeSql("delete from imagetable where fn not in (select image from apartments)",[]);
-      }).catch(err => {
-        console.log(err);
-      }))
+      if (vendrole == true) {
+        console.log(vendrole);
+        resolve(promise.then((v1) => {
+          return this.resetdata("tmpprojversion");
+        }).then((v2) => {
+          return this.resetdata("uplimagetable");
+        }).then((v3) => {
+          return this.resetdata("FormalCheckIssues");
+        }).then((v5) => {
+          return this.resetdata("tmpFormalCheckIssues");
+        }).then((v1) => {
+          return this.resetdata("FormalCheckLogs");
+        }).then((v2) => {
+          return this.resetdata("tmpFormalCheckLogs");
+        }).then((v3) => {
+          return this.resetdata("ProjTeam");
+        }).then((v5) => {
+          return this.resetdata("tmpProjTeam");
+        }).then((v6) => {
+          let sql = "update projversion set lastdate = null,needupd = 1";
+          return this.db.executeSql(sql, []);
+        }).then((v7) => {
+          return this.db.executeSql("delete from imagetable", []);
+        }).catch(err => {
+          console.log(err);
+        }))
+      } else {
+        resolve(promise.then((v1) => {
+          return this.resetdata("tmpprojversion");
+        }).then((v2) => {
+          return this.resetdata("uplimagetable");
+        }).then((v3) => {
+          return this.resetdata("tmpbuildingversion");
+        }).then((v5) => {
+          return this.resetdata("FormalCheckBatchRooms");
+        }).then((v6) => {
+          return this.resetdata("Rooms");
+        }).then((v1) => {
+          return this.resetdata("FormalCheckIssues");
+        }).then((v2) => {
+          return this.resetdata("tmpFormalCheckIssues");
+        }).then((v3) => {
+          return this.resetdata("uplFormalCheckIssues");
+        }).then((v5) => {
+          return this.resetdata("CustRoomSatisfactions");
+        }).then((v6) => {
+          return this.resetdata("tmpCustRoomSatisfactions");
+        }).then((v1) => {
+          return this.resetdata("RoomNoAcceptLogs");
+        }).then((v2) => {
+          return this.resetdata("tmpRoomNoAcceptLogs");
+        }).then((v3) => {
+          return this.resetdata("FormalRoomDetails");
+        }).then((v5) => {
+          return this.resetdata("tmpFormalRoomDetails");
+        }).then((v6) => {
+          console.log('vt6');
+          return this.db.executeSql("update buildingversion set needupd = 1, needdownload = 1, versionid = 0", []);
+        }).then((v6) => {
+          return this.db.executeSql("delete from imagetable where fn not in (select image from apartments)", []);
+        }).catch(err => {
+          console.log(err);
+        }))
+      }
     })
   }
 

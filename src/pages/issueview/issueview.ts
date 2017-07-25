@@ -70,9 +70,18 @@ export class IssueviewPage {
 			this.uglevel = issuelist.UrgencyId;
 			this.vend = issuelist.Vendor;
 			this.resunit = issuelist.Resunit;
-			this.registertime = issuelist.RegisterDate;
-			this.duetime = issuelist.LimitDate;
-			this.fixtime = issuelist.ReFormDate;
+			let dt = new Date(issuelist.RegisterDate);
+			this.registertime = dt.toLocaleString();
+			if (issuelist.LimitDate) {
+               dt = new Date(issuelist.LimitDate)
+			this.duetime = dt.toLocaleString();
+			}
+			
+			if (issuelist.ReFormDate) {
+              dt = new Date(issuelist.ReFormDate);
+			this.fixtime = dt.toLocaleString();
+			}
+			
 			this.status = issuelist.IssueStatus;
 			this.versionid = issuelist.VersionId;
 			this.ResponsibleId = issuelist.ResponsibleId;
@@ -176,11 +185,10 @@ export class IssueviewPage {
 					sql = "update #upltablename# set IssueStatus = '已通过', ReviewDate = datetime('now', 'localtime'), EngineerName = '#username#',EngineerPhone = '#userid#',EngineerId = '' where Id = '#issueid#' ";
 					sql = sql.replace('#upltablename#', upltablename).replace('#userid#', this.userid).replace('#issueid#', this.issueid).replace('#username#', this.username);
 				} else {
-					sql = "insert into #upltablename# (Id,BatchId,IssueId,RoomId,ProjId,VersionId,BuildingId,IssueStatus,EngineerPhone,EngineerName,ReviewDate) values (#values#)";
+					sql = "insert into #upltablename# (Id,BatchId,RoomId,ProjId,VersionId,BuildingId,IssueStatus,EngineerPhone,EngineerName,ReviewDate) values (#values#)";
 					let value = [];
 					value.push("'" + this.issueid + "'");
 					value.push("'" + this.batchid + "'");
-					value.push("''");
 					value.push("'" + this.roomid + "'");
 					value.push("'" + this.projid + "'");
 					value.push(this.versionid);
@@ -218,7 +226,7 @@ export class IssueviewPage {
 					status = '待整改';
 				}
 				if (this.versionid == 0) {
-					let sql = "update #tablename# set IssueStatus = '#status#', ReturnDate = datetime('now', 'localtime'),ReturnReason = '#ReturnReason#', EngineerName = '#username#',EngineerPhone = '#userid#',EngineerId = '' where Id = '#issueid#'";
+					let sql = "update #tablename# set IssueStatus = '#status#', ReturnDate = datetime('now', 'localtime'),ReturnReason = '#ReturnReason#', EngineerName = '#username#',EngineerPhone = '#userid#',EngineerId = '',ReturnNum = ReturnNum+1 where Id = '#issueid#'";
 					sql = sql.replace("#tablename#", tablename).replace("#userid#", this.userid).replace('#issueid#', this.issueid).replace('#status#', status).replace('#ReturnReason#', result).replace('#username#', this.username);
 					this.initBaseDB.updateIssue([sql]).then(v => {
 						console.log(sql);
@@ -230,7 +238,7 @@ export class IssueviewPage {
 						alert('退回失败:' + err);
 					})
 				} else {
-					let sql = "update #tablename# set IssueStatus = '#status#', ReturnDate = datetime('now', 'localtime'), ReturnReason = '#ReturnReason#',EngineerName = '#username#',EngineerPhone = '#userid#',EngineerId = '' where Id = '#issueid#' ";
+					let sql = "update #tablename# set IssueStatus = '#status#', ReturnDate = datetime('now', 'localtime'), ReturnReason = '#ReturnReason#',EngineerName = '#username#',EngineerPhone = '#userid#',EngineerId = '',ReturnNum = ReturnNum+1 where Id = '#issueid#' ";
 					sql = sql.replace("#tablename#", tablename).replace("#userid#", this.userid).replace('#issueid#', this.issueid).replace('#status#', status).replace('#ReturnReason#', result).replace('#username#', this.username);
 					let uplsql = "select id from #upltablename# where id = '" + this.issueid + "'";
 					uplsql = uplsql.replace("#upltablename#", upltablename);
@@ -248,11 +256,10 @@ export class IssueviewPage {
 							sql = "update #upltablename# set IssueStatus = '#status#', ReturnDate = datetime('now', 'localtime'), ReturnReason = '#ReturnReason#', EngineerName = '#username#',EngineerPhone = '#userid#',EngineerId = '' where Id = '#issueid#' ";
 							sql = sql.replace("#upltablename#", upltablename).replace('#userid#', this.userid).replace('#issueid#', this.issueid).replace('#status#', status).replace('#ReturnReason#', result).replace('#username#', this.username);
 						} else {
-							sql = "insert into #upltablename# (Id,BatchId,IssueId,RoomId,ProjId,VersionId,BuildingId,IssueStatus,EngineerPhone,EngineerName,ReturnDate,ReturnReason) values (#values#)";
+							sql = "insert into #upltablename# (Id,BatchId,RoomId,ProjId,VersionId,BuildingId,IssueStatus,EngineerPhone,EngineerName,ReturnDate,ReturnReason) values (#values#)";
 							let value = [];
 							value.push("'" + this.issueid + "'");
-							value.push("'" + this.batchid + "'");
-							value.push("''");
+							value.push("'" + this.batchid + "'");							
 							value.push("'" + this.roomid + "'");
 							value.push("'" + this.projid + "'");
 							value.push(this.versionid);
@@ -335,11 +342,10 @@ export class IssueviewPage {
 								sql = "update #upltablename# set IssueStatus = '#status#', CloseDate = datetime('now', 'localtime'), CloseReason = '#CloseReason#',EngineerName = '#username#',EngineerPhone = '#userid#',EngineerId = '' #img#  where Id = '#issueid#' ";
 								sql = sql.replace("#upltablename#", upltablename).replace('#userid#', this.userid).replace('#issueid#', this.issueid).replace('#status#', status).replace('#CloseReason#', reason).replace('#img#', setimg).replace('#username#', this.username);
 							} else {
-								sql = "insert into #upltablename# (Id,BatchId,IssueId,RoomId,ProjId,VersionId,BuildingId,IssueStatus,EngineerPhone,EngineerName,CloseDate,CloseReason #imgfield#) values (#values#)";
+								sql = "insert into #upltablename# (Id,BatchId,RoomId,ProjId,VersionId,BuildingId,IssueStatus,EngineerPhone,EngineerName,CloseDate,CloseReason #imgfield#) values (#values#)";
 								let value = [];
 								value.push("'" + this.issueid + "'");
 								value.push("'" + this.batchid + "'");
-								value.push("''");
 								value.push("'" + this.roomid + "'");
 								value.push("'" + this.projid + "'");
 								value.push(this.versionid);
@@ -407,11 +413,10 @@ export class IssueviewPage {
 					sql = "update #upltablename# set IssueStatus = '已作废', CancelDate = datetime('now', 'localtime'), EngineerName = '#username#',EngineerPhone = '#userid#',EngineerId = '' where Id = '#issueid#' ";
 					sql = sql.replace("#upltablename#", upltablename).replace('#userid#', this.userid).replace('#issueid#', this.issueid).replace('#username#', this.username);
 				} else {
-					sql = "insert into #upltablename# (Id,BatchId,IssueId,RoomId,ProjId,VersionId,BuildingId,IssueStatus,EngineerPhone,EngineerName,CancelDate) values (#values#)";
+					sql = "insert into #upltablename# (Id,BatchId,RoomId,ProjId,VersionId,BuildingId,IssueStatus,EngineerPhone,EngineerName,CancelDate) values (#values#)";
 					let value = [];
 					value.push("'" + this.issueid + "'");
 					value.push("'" + this.batchid + "'");
-					value.push("''");
 					value.push("'" + this.roomid + "'");
 					value.push("'" + this.projid + "'");
 					value.push(this.versionid);

@@ -8,7 +8,6 @@ import { NativeService } from '../../providers/nativeservice';
 import { APP_SERVE_URL } from '../../providers/Constants';
 import { HttpService } from '../../providers/HttpService';
 import { BuilderTabsPage } from '../buildertabs/buildertabs';
-import { RejectPage } from '../reject/reject';
 import { ChangePWPage } from '../changepw/changepw';
 
 @Component({
@@ -19,26 +18,30 @@ export class LoginPage {
   imgheight: any;
   userid: string;
   password: string;
+
   constructor(public navCtrl: NavController, public alertCtrl: AlertController, public localStorage: LocalStorage, public initBaseDB: initBaseDB,
     public nativeservice: NativeService, private httpService: HttpService) {
+    console.log("login start app");
     this.imgheight = window.innerHeight / 1.8;
-    this.localStorage.getItem('curuser').then(val=>{
-      if (val && val.userid){
+    this.localStorage.getItem('curuser').then(val => {
+      if (val && val.userid) {
         this.userid = val.userid;
         console.log(val.userid);
-      }         
+      }
     })
+    // let d=[];
+    // d.push("'ui'");d.push("'ee'");d.push("'2e'");d.push("'12'");
+    // console.log('(#x#)'.replace('#x#', d.join(',')));
     //this.userid = '12345678901'; this.password = "123456";
-    let elements = document.querySelectorAll(".tabbar");
-    if (elements != null) {
-      Object.keys(elements).map((key) => {
-        elements[key].style.display = 'none';
-      });
-    }
+    // let elements = document.querySelectorAll(".tabbar");
+    // if (elements != null) {
+    //   Object.keys(elements).map((key) => {
+    //     elements[key].style.display = 'none';
+    //   });
+    // }
   }
 
   loginclick() {
-
     // this.httpService.post(APP_SERVE_URL + '/AppLogin/AddUser',{Token:"AFC5FA4E2E2C4D7F62D8D9EA82DB9A39",ProjId: "6a397ed5-3923-47e4-8f5a-033920062c02", 
     //                      UserId: "13545678905", Name: "TestProjAccount1"}).then(res=>{
     //       alert(res[0].Result);  
@@ -77,27 +80,42 @@ export class LoginPage {
     // console.log(x.join(','));
     //this.initBaseDB.testhttp();
     //this.navCtrl.push(BuilderTabsPage);
-    this.nativeservice.showLoading('加载中,请稍后...');
-    this.httpService.get(APP_SERVE_URL + '/AppLogin', { userAct: this.userid, password: this.nativeservice.encode64(this.userid + "$" + this.password) }).then(res => {
-      console.log(res[0]);
-      this.initData(res[0]).then(v=>{
-        this.nativeservice.hideLoading();
-      })
-    }).catch(e => {
-      this.nativeservice.hideLoading();
-      // this.localStorage.setItem('curproj', { projid: 'p0001', projname: '项目1' })
-      // this.localStorage.setItem('curuser', { userid: 'admin', duetime: 1498121315683, token: "ejofwijfeoiwfjewi", username: 'adminname' });
-      // this.navCtrl.push(TabsPage);
-  })
+    // let d = new Date();
+    // let t = new Date(d.getTime()+3*24*3600*1000);
+    // let w = new Date(Date.UTC(t.getFullYear(),t.getMonth(),t.getDate(),15,59,59));
+    // console.log(t.toLocaleDateString());
+    // console.log(t.toLocaleTimeString());
+    // console.log(w.toLocaleString());
+    // console.log(t.toLocaleString());
+    // console.log(t.toTimeString());
+    this.nativeservice.isConnecting().then((val: boolean) => {
+      if (val == false) {
+        throw '无网络登陆失败';
+      } else {
+        this.nativeservice.showLoading('加载中,请稍后...');
+        this.httpService.get(APP_SERVE_URL + '/AppLogin', { userAct: this.userid, password: this.nativeservice.encode64(this.userid + "$" + this.password) }).then(res => {
+          console.log(res[0]);
+          this.initData(res[0]).then(v => {
+            this.nativeservice.hideLoading();
+          })
+        }).catch(e => {
+          this.nativeservice.hideLoading();
+          // this.localStorage.setItem('curproj', { projid: 'p0001', projname: '项目1' })
+          // this.localStorage.setItem('curuser', { userid: 'admin', duetime: 1498121315683, token: "ejofwijfeoiwfjewi", username: 'adminname' });
+          // this.navCtrl.push(TabsPage);
+        })
+      }
+    })
+
   }
 
   ionViewWillLeave() {
-    let elements = document.querySelectorAll(".tabbar");
-    if (elements != null) {
-      Object.keys(elements).map((key) => {
-        elements[key].style.display = 'flex';
-      });
-    }
+    // let elements = document.querySelectorAll(".tabbar");
+    // if (elements != null) {
+    //   Object.keys(elements).map((key) => {
+    //     elements[key].style.display = 'flex';
+    //   });
+    // }
   }
 
   initData(items): Promise<any> {
@@ -105,31 +123,64 @@ export class LoginPage {
       let item = items[1];
       console.log(item.VendRole);
       console.log("first:" + item.First);
+      //item.VendRole = false;
       // if (item.VendRole == false) {
       let promise = new Promise((resolve) => {
         resolve(100);
       });
       resolve(promise.then((v1) => {
-        return this.localStorage.setItem('curuser', { userid: this.userid, token: item.Token, duetime: item.AllowEnd, username: item.UserName, vendrole: item.VendRole });
+        return this.localStorage.setItem('curuser', { userid: this.userid, token: item.Token, duetime: item.AllowEnd, username: item.UserName, vendrole: item.VendRole, id: item.UserId });
       }).then((v2) => {
         return this.initBaseDB.initdb(this.userid + ".db", false);
       }).then((v3) => {
-        return this.initBaseDB.initProjVersion(item.Token);
+        return this.initBaseDB.initProjVersion(item.Token, item.VendRole);
       }).then((v4) => {
         console.log(v4);
-        return this.initBaseDB.initbuildingversion(item.Token, v4).then(v => {
-          if (item.First == true) {
-            this.navCtrl.push(ChangePWPage, { "first": item.first });
+        if (v4 == "no proj") {
+          this.nativeservice.hideLoading();
+          if (item.VendRole == true) {
+            if (item.First == true) {
+              this.navCtrl.push(ChangePWPage, { "first": item.first });
+            } else {
+              console.log(item.First);
+              this.navCtrl.push(BuilderTabsPage);
+            }
           } else {
-            this.navCtrl.push(TabsPage);
+            if (item.First == true) {
+              this.navCtrl.push(ChangePWPage, { "first": item.first });
+            } else {
+              this.navCtrl.push(TabsPage);
+            }
           }
-          //return this.initBaseDB.testupdate();
-        })
+          return 10;
+        } else {
+          if (item.VendRole == true) {
+            return this.initBaseDB.downloadbuilderdata(item.Token, v4).then(v => {
+              this.nativeservice.hideLoading();
+              if (item.First == true) {
+                this.navCtrl.push(ChangePWPage, { "first": item.first });
+              } else {
+                console.log(item.First);
+                this.navCtrl.push(BuilderTabsPage);
+              }
+            })
+          } else {
+            return this.initBaseDB.initbuildingversion(item.Token, v4).then(v => {
+              this.nativeservice.hideLoading();
+              if (item.First == true) {
+                this.navCtrl.push(ChangePWPage, { "first": item.first });
+              } else {
+                this.navCtrl.push(TabsPage);
+              }
+            })
+          }
+        }
       }).catch(err => {
         console.log(err);
-        return this.localStorage.setItem('curuser', { userid: 'admin', duetime: 1498121315683, token: "ejofwijfeoiwfjewi", username: 'adminname' }).then(v => {
-          this.navCtrl.push(TabsPage);
-        })
+        this.nativeservice.hideLoading();
+        // return this.localStorage.setItem('curuser', { userid: 'admin', duetime: 1498121315683, token: "ejofwijfeoiwfjewi", username: 'adminname' }).then(v => {
+        //   this.navCtrl.push(TabsPage);
+        // })
       }))
       // }
       // else {
@@ -174,6 +225,7 @@ export class LoginPage {
       }))
     })
   }
+
 
   // test(): Promise<any> {
   //   //this.initBaseTable("projver", "Projid,version integer");

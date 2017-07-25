@@ -38,16 +38,17 @@
     <button ion-button icon-only (click)="cameraclick()">
 	  <ion-icon ios="ios-camera" md="md-camera"></ion-icon>
 	 </button>
-	
-    <ion-thumbnail item-left *ngFor="let item of images">
+    <ion-thumbnail item-left *ngFor="let item of images" style="margin:5px;min-width:50px;min-height:50px">
       <div style="color:red"><ion-icon item-right ios="ios-close" md="md-close" (click)="deleteimage(item)"></ion-icon></div>
-      <img [src]="item" (click)="showBigImage(item)">
+      <img [src]="item" (click)="showBigImage(item)" style="width:50px; height:50px">
     </ion-thumbnail>
   </ion-item>
   </ion-list>
-<p></p>
+
+</ion-content>
+
+<ion-footer>
 <ion-item>
 	<button ion-button full (click)="confirmclick()" style="height:2.8em" color="primary">确定</button>
 	</ion-item>
-
-</ion-content>
+</ion-footer>

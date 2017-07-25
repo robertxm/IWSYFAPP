@@ -63,16 +63,22 @@ export class ReceiptPage {
     }
 
     initdata() {
-        this.initBaseDB.getroomdetails(this.receiptInfo.roomId,this.receiptInfo.batchid).then(val => {
+        this.initBaseDB.getroomdetails(this.receiptInfo.roomId, this.receiptInfo.batchid).then(val => {
             console.log("roomdetails:" + JSON.stringify(val.rows.item(0)));
             if (val.rows.length > 0) {
-
-                this.receiptInfo.ownerName = val.rows.item(0).CustId;
-                this.receiptInfo.ownerPhone = val.rows.item(0).CustPhone;
-                this.receiptInfo.electricMeter = val.rows.item(0).AmmeterReading;
-                this.receiptInfo.waterMeter = val.rows.item(0).WaterMeterReading;
-                this.receiptInfo.gasMeter = val.rows.item(0).GasMeterReading;
-                this.receiptInfo.keyReserve = val.rows.item(0).KeyRetentionStatus;
+                if (val.rows.item(0).CustId != 'undefined')
+                    this.receiptInfo.ownerName = val.rows.item(0).CustId;
+                if (val.rows.item(0).CustPhone != 'undefined')
+                    this.receiptInfo.ownerPhone = val.rows.item(0).CustPhone;
+                console.log(val.rows.item(0).AmmeterReading);
+                if (val.rows.item(0).AmmeterReading > 0)
+                    this.receiptInfo.electricMeter = val.rows.item(0).AmmeterReading;
+                if (val.rows.item(0).WaterMeterReading > 0)
+                    this.receiptInfo.waterMeter = val.rows.item(0).WaterMeterReading;
+                if (val.rows.item(0).GasMeterReading > 0)
+                    this.receiptInfo.gasMeter = val.rows.item(0).GasMeterReading;
+                if (val.rows.item(0).KeyRetentionStatus > 0)
+                    this.receiptInfo.keyReserve = val.rows.item(0).KeyRetentionStatus;
                 let dt: Date;
                 if (val.rows.item(0).Transdate) {
                     dt = new Date(val.rows.item(0).Transdate);
@@ -86,9 +92,9 @@ export class ReceiptPage {
                 this.receiptInfo.dlvrDate = dt.toLocaleDateString() + "  " + dt.toLocaleTimeString();
                 this.receiptInfo.additionNote = val.rows.item(0).Remark;
                 this.initBaseDB.getimagedata(this.receiptInfo.projId, val.rows.item(0).ImgSign).then(v => {
-                    if (v.rows.length == 0) {
-                        this.receiptInfo.ownerSign = "assets/img/little.jpg";
-                    } else {
+                    if (v && v.rows.length > 0) {
+                    //     this.receiptInfo.ownerSign = "assets/img/little.jpg";
+                    // } else {
                         this.receiptInfo.ownerSign = 'data:image/png;base64,' + v.rows.item(0).src;
                     }
                 })
@@ -136,88 +142,113 @@ export class ReceiptPage {
         document.getElementById("signPad").style.display = "none";
     }
 
+    cansubmit(): boolean {
+        let ret: boolean; ret = true;
+        if (!this.receiptInfo.electricMeter && this.receiptInfo.electricMeter != 0) {
+            alert("电表读数必填."); ret = false;
+        }
+        if (!this.receiptInfo.waterMeter && this.receiptInfo.waterMeter != 0) {
+            alert("水表读数必填."); ret = false;
+        }
+        if (!this.receiptInfo.gasMeter && this.receiptInfo.gasMeter != 0) {
+            alert("气表读数必填."); ret = false;
+        }
+        if (!this.receiptInfo.keyReserve && this.receiptInfo.keyReserve != 0) {
+            alert("钥匙留用必填."); ret = false;
+        }
+        
+        return ret;
+    }
+
     doSubmit() {
-        let promise = new Promise((resolve) => {
-            resolve(100);
-        });
+        if (this.cansubmit()) {
+            let promise = new Promise((resolve) => {
+                resolve(100);
+            });
 
-        promise.then(v1 => {
-            if (this.receiptInfo.ownerSign != 'assets/img/little.jpg') {
-                let tmpstr = 'data:image/png;base64,';
-                let val = this.receiptInfo.ownerSign.replace(tmpstr, '');
-                //let filename = Md5.hashStr(val).toString() + ".jpeg";
-                console.log('image2');
-                console.log(val);
-                return this.initBaseDB.updateImgData(this.receiptInfo.projId, this.receiptInfo.batchid, this.receiptInfo.buildingId, [val], 'png').then(v => {
-                    console.log(v);
-                    let fn: Array<any>; fn = []; fn = v;
-                    console.log(fn[0]);
-                    return fn[0];
-                }).catch(err => {
-                    console.log('签名上传失败.' + err);
-                    throw '签名上传失败.';
-                })
-            } else {
-                return '';
-            }
-        }).then((v2: string) => {
-            console.log(v2);
-            let now = new Date();
-            let sqls = [];
-            let sql = "update FormalRoomDetails set versionid = 0,RoomStatus = '已交付', Transdate =datetime('now', 'localtime'), Remark = '#Remark#',EngineerPhone = '#userid#',EngineerName = '#username#',ImgSign = '#imgsign#',AmmeterReading=#ammeter#,WaterMeterReading=#water#,GasMeterReading=#gas#,KeyRetentionStatus=#key# where roomid = '#roomid#' ";
-            sql = sql.replace('#Remark#', this.receiptInfo.additionNote).replace('#userid#', this.userid).replace('#username#', this.userid).replace('#imgsign#', v2).replace('#roomid#', this.receiptInfo.roomId);
-            if (this.receiptInfo.electricMeter == 0){
-                sql = sql.replace('#ammeter#', '0');
-            } else {
-                sql = sql.replace('#ammeter#', this.receiptInfo.electricMeter.toString());
-            }
-            if (this.receiptInfo.waterMeter == 0){
-                sql = sql.replace('#water#', '0');
-            } else {
-                sql = sql.replace('#water#', this.receiptInfo.waterMeter.toString());
-            }
-            if (this.receiptInfo.gasMeter == 0){
-                sql = sql.replace('#gas#', '0');
-            } else {
-                sql = sql.replace('#gas#', this.receiptInfo.gasMeter.toString());
-            }
-            if (this.receiptInfo.keyReserve == 0){
-                sql = sql.replace('#key#', '0');
-            } else {
-                sql = sql.replace('#key#', this.receiptInfo.keyReserve.toString());
-            }       
-            
-            //Transdate = '#datetime#', sql = sql.replace('#datetime#',now.toLocaleDateString()+)
-            console.log(sql);
-            sqls.push(sql);
-            if (this.satDim.length > 0) {
-                sql = "insert into CustRoomSatisfactions (ProjId,VersionId,BuildingId,BatchId,RoomId,SatisfiedDim,Score) values #value# "
-                let value = [];
-                for (var i = 0; i < this.satDim.length; i++) {
-                    let tmpvalue = [];
-                    tmpvalue.push("'" + this.receiptInfo.projId + "'");
-                    tmpvalue.push(0);
-                    tmpvalue.push("'" + this.receiptInfo.buildingId + "'");
-                    tmpvalue.push("'" + this.receiptInfo.batchid + "'");
-                    tmpvalue.push("'" + this.receiptInfo.roomId + "'");
-                    tmpvalue.push("'" + this.satDim[i].dim + "'");
-                    tmpvalue.push(this.satDim[i].score);
-                    value.push("(#row#)".replace("#row#", tmpvalue.join(',')));
+            promise.then(v1 => {
+                if (this.receiptInfo.ownerSign && this.receiptInfo.ownerSign != '') {
+                    let tmpstr = 'data:image/png;base64,';
+                    let val = this.receiptInfo.ownerSign.replace(tmpstr, '');
+                    //let filename = Md5.hashStr(val).toString() + ".jpeg";
+                    console.log('image2');
+                    console.log(val);
+                    return this.initBaseDB.updateImgData(this.receiptInfo.projId, this.receiptInfo.batchid, this.receiptInfo.buildingId, [val], 'png').then(v => {
+                        console.log(v);
+                        let fn: Array<any>; fn = []; fn = v;
+                        console.log(fn[0]);
+                        return fn[0];
+                    }).catch(err => {
+                        console.log('签名上传失败.' + err);
+                        throw '签名上传失败.';
+                    })
+                } else {
+                    return '';
                 }
-                console.log(value.join(','));
-                sql = sql.replace('#value#', value.join(','));
-                sqls.push(sql);
-            }
-            return this.initBaseDB.currentdb().sqlBatch(sqls);
-        }).then(v3 => {
-            this.initBaseDB.updateuploadflag(this.receiptInfo.projId, this.receiptInfo.batchid, this.receiptInfo.buildingId, this.type);
-        }).catch(err => {
-            console.log('交付信息提交失败:' + err);
-            alert('交付信息提交失败:' + err);
-        }).then(v4 => {
-            this.navCtrl.pop();
-        })
+            }).then((v2: string) => {
+                console.log(v2);
+                let now = new Date();
+                let sqls = [];
+                let sql = "update FormalRoomDetails set versionid = 0,RoomStatus = '已交付', Transdate =datetime('now', 'localtime'), Remark = '#Remark#',EngineerPhone = '#userid#',EngineerName = '#username#',ImgSign = '#imgsign#',AmmeterReading=#ammeter#,WaterMeterReading=#water#,GasMeterReading=#gas#,KeyRetentionStatus=#key# where roomid = '#roomid#' ";
+                sql = sql.replace('#Remark#', this.receiptInfo.additionNote).replace('#userid#', this.userid).replace('#username#', this.userid).replace('#roomid#', this.receiptInfo.roomId);
+                console.log(this.receiptInfo.electricMeter);
+                if (v2) {
+                    sql = sql.replace('#imgsign#', v2);
+                } else {
+                    sql = sql.replace('#imgsign#', "");
+                }
+                if (this.receiptInfo.electricMeter == 0) {
+                    sql = sql.replace('#ammeter#', '0');
+                } else {
+                    sql = sql.replace('#ammeter#', this.receiptInfo.electricMeter.toString());
+                }
+                if (this.receiptInfo.waterMeter == 0) {
+                    sql = sql.replace('#water#', '0');
+                } else {
+                    sql = sql.replace('#water#', this.receiptInfo.waterMeter.toString());
+                }
+                if (this.receiptInfo.gasMeter == 0) {
+                    sql = sql.replace('#gas#', '0');
+                } else {
+                    sql = sql.replace('#gas#', this.receiptInfo.gasMeter.toString());
+                }
+                if (this.receiptInfo.keyReserve == 0) {
+                    sql = sql.replace('#key#', '0');
+                } else {
+                    sql = sql.replace('#key#', this.receiptInfo.keyReserve.toString());
+                }
 
+                //Transdate = '#datetime#', sql = sql.replace('#datetime#',now.toLocaleDateString()+)
+                console.log(sql);
+                sqls.push(sql);
+                if (this.satDim.length > 0) {
+                    sql = "insert into CustRoomSatisfactions (ProjId,VersionId,BuildingId,BatchId,RoomId,SatisfiedDim,Score) values #value# "
+                    let value = [];
+                    for (var i = 0; i < this.satDim.length; i++) {
+                        let tmpvalue = [];
+                        tmpvalue.push("'" + this.receiptInfo.projId + "'");
+                        tmpvalue.push(0);
+                        tmpvalue.push("'" + this.receiptInfo.buildingId + "'");
+                        tmpvalue.push("'" + this.receiptInfo.batchid + "'");
+                        tmpvalue.push("'" + this.receiptInfo.roomId + "'");
+                        tmpvalue.push("'" + this.satDim[i].dim + "'");
+                        tmpvalue.push(this.satDim[i].score);
+                        value.push("(#row#)".replace("#row#", tmpvalue.join(',')));
+                    }
+                    console.log(value.join(','));
+                    sql = sql.replace('#value#', value.join(','));
+                    sqls.push(sql);
+                }
+                return this.initBaseDB.currentdb().sqlBatch(sqls);
+            }).then(v3 => {
+                this.initBaseDB.updateuploadflag(this.receiptInfo.projId, this.receiptInfo.batchid, this.receiptInfo.buildingId, this.type);
+            }).catch(err => {
+                console.log('交付信息提交失败:' + err);
+                alert('交付信息提交失败:' + err);
+            }).then(v4 => {
+                this.navCtrl.pop();
+            })
+        }
     }
 
     doCancel() {

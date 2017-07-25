@@ -32004,6 +32004,49 @@ ion-navbar.toolbar {
   }
 }
 
+page-about .ionicon {
+  color: 'danger';
+}
+
+page-builder .cyclediv {
+  width: 12px;
+  height: 12px;
+  border-radius: 6px;
+  display: inline-block;
+}
+
+page-builder .pending {
+  background-color: purple;
+}
+
+page-builder .assigned {
+  background-color: red;
+}
+
+page-builder .processed {
+  background-color: blue;
+}
+
+page-builder .rejected {
+  background-color: chocolate;
+}
+
+page-builder-issue-detail .pending {
+  background-color: purple;
+}
+
+page-builder-issue-detail .assinged {
+  background-color: red;
+}
+
+page-builder-issue-detail .processed {
+  background-color: blue;
+}
+
+page-builder-issue-detail .rejected {
+  background-color: chocolate;
+}
+
 page-floor ion-label {
   white-space: normal;
 }

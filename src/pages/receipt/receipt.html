@@ -22,7 +22,7 @@
     </ion-item-group>
     <ion-item-group>
       <ion-item-divider color="light"><ion-icon name="clipboard" item-right></ion-icon>交付信息</ion-item-divider>
-      <ion-item><ion-label fixed>电表底数</ion-label><span style="width:70px;" item-right>度</span><ion-input [readonly] = "readonly" type="number" [(ngModel)]="receiptInfo.electricMeter"></ion-input></ion-item>
+      <ion-item><ion-label fixed>电表底数</ion-label><span style="width:70px;" item-right>度</span><ion-input [readonly] = "readonly" type="number" [(ngModel)]="receiptInfo.electricMeter" ></ion-input></ion-item>
       <ion-item><ion-label fixed>水表底数</ion-label><span style="width:70px;" item-right>立方</span><ion-input [readonly] = "readonly" type="number" [(ngModel)]="receiptInfo.waterMeter"></ion-input></ion-item>
       <ion-item><ion-label fixed>气表底数</ion-label><span style="width:70px;" item-right>立方</span><ion-input [readonly] = "readonly" type="number" [(ngModel)]="receiptInfo.gasMeter"></ion-input></ion-item>
       <ion-item><ion-label fixed>钥匙留用</ion-label><span style="width:70px;" item-right>把　</span><ion-input [readonly] = "readonly" type="number" [(ngModel)]="receiptInfo.keyReserve"></ion-input></ion-item>

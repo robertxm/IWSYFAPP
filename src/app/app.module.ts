@@ -36,6 +36,12 @@ import { IssuereturnPage } from '../pages/issuereturn/issuereturn';
 import { IssueclosedPage } from '../pages/issueclosed/issueclosed';
 import { BuilderPage } from '../pages/builder/builder';
 import { BuilderTabsPage } from '../pages/buildertabs/buildertabs';
+import { BuilderAssigning } from '../pages/builder-assigning/builder-assigning';
+import { BuilderCloseIssue } from '../pages/builder-close-issue/builder-close-issue';
+import { BuilderIssueDetail } from '../pages/builder-issue-detail/builder-issue-detail';
+import { BuilderIssuePosition } from '../pages/builder-issue-position/builder-issue-position';
+import { BuilderReturnIssue } from '../pages/builder-return-issue/builder-return-issue'; 
+import { AssignreturnPage } from '../pages/assignreturn/assignreturn'; 
 
 import { StatusBar } from '@ionic-native/status-bar';
 import { SplashScreen } from '@ionic-native/splash-screen';
@@ -85,7 +91,13 @@ import { FlooroldPage } from '../pages/floorold/Floor';
     IssuereturnPage,
     IssueclosedPage,
     BuilderPage,
-    BuilderTabsPage
+    BuilderTabsPage,
+    BuilderAssigning,
+    BuilderCloseIssue,
+    BuilderIssueDetail,
+    BuilderIssuePosition,
+    BuilderReturnIssue,
+    AssignreturnPage
   ],
   imports: [
     BrowserModule,
@@ -129,7 +141,13 @@ import { FlooroldPage } from '../pages/floorold/Floor';
     IssuereturnPage,
     IssueclosedPage,
     BuilderPage,
-    BuilderTabsPage
+    BuilderTabsPage,
+    BuilderAssigning,
+    BuilderCloseIssue,
+    BuilderIssueDetail,
+    BuilderIssuePosition,
+    BuilderReturnIssue,
+    AssignreturnPage
   ],
   providers: [
     StatusBar,

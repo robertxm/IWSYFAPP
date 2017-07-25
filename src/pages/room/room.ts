@@ -26,9 +26,16 @@ export class RoomPage implements OnInit {
 	issues: Array<any>;
 	username:string; 
 	readonly:boolean;
+	projname:string;
+	readycounts:number;
+    forfixcounts:number;
+    fixedcounts:number;
+    passcounts:number;
+	liststr:string;
 	constructor(public navCtrl: NavController, public params: NavParams, public initBaseDB: initBaseDB,
 		public localStorage: LocalStorage, public loadingCtrl: LoadingController) {
 		this.projid = this.params.get('projid');
+		this.projname = this.params.get('projname');
 		this.batchid = this.params.get('batchid');
 		this.type = this.params.get('type');
 		this.roomid = this.params.get('roomid');
@@ -36,6 +43,7 @@ export class RoomPage implements OnInit {
 		this.buildingname = this.params.get('buildingname');
 		this.roomname = this.params.get('roomname');
 		this.listview = false;		
+		this.liststr = "列表";
 		this.localStorage.getItem('curuser').then(val=>{
 			this.username = val.username;
 		})
@@ -45,6 +53,11 @@ export class RoomPage implements OnInit {
 	listshowclick() {
 		document.getElementById("apartimg").hidden = !document.getElementById("apartimg").hidden;
 		this.listview = !this.listview;
+		if (this.listview == true){
+			this.liststr = "户型图";
+		} else {
+			this.liststr = "列表";
+		}
 	}
     
     listclick(issueid) {
@@ -62,15 +75,15 @@ export class RoomPage implements OnInit {
 	}
 
 	doReject() {
-		this.navCtrl.push(RejectPage, { "username":this.username,"roomid": this.roomid, "projid": this.projid, "batchid": this.batchid, "buildingid": this.buildingid, "type": this.type });
+		this.navCtrl.push(RejectPage, { "username":this.username,"roomid": this.roomid, "projid": this.projid, "projname":this.projname, "batchid": this.batchid, "buildingid": this.buildingid, "type": this.type });
 	}
 
 	doReceipt() {
-		this.navCtrl.push(ReceiptPage, { "readonly":this.readonly,"username":this.username,"roomid": this.roomid, "projid": this.projid, "batchid": this.batchid, "buildingid": this.buildingid, "buildingname": this.buildingname, "roomname": this.roomname, "type": this.type });
+		this.navCtrl.push(ReceiptPage, { "readonly":this.readonly,"username":this.username,"roomid": this.roomid, "projid": this.projid, "projname":this.projname, "batchid": this.batchid, "buildingid": this.buildingid, "buildingname": this.buildingname, "roomname": this.roomname, "type": this.type });
 	};
 
 	Receiptinfo() {
-		this.navCtrl.push(ReceiptPage, { "readonly":this.readonly,"username":this.username,"roomid": this.roomid, "projid": this.projid, "batchid": this.batchid, "buildingid": this.buildingid, "buildingname": this.buildingname, "roomname": this.roomname, "type": this.type });
+		this.navCtrl.push(ReceiptPage, { "readonly":this.readonly,"username":this.username,"roomid": this.roomid, "projid": this.projid, "projname":this.projname, "batchid": this.batchid, "buildingid": this.buildingid, "buildingname": this.buildingname, "roomname": this.roomname, "type": this.type });
 	};
 
 	drawIssue(issueid: string, issue: any) {
@@ -96,6 +109,7 @@ export class RoomPage implements OnInit {
 
 	ionViewDidEnter() {
 		this.issues = [];
+		this.readycounts = 0;this.forfixcounts = 0;this.fixedcounts = 0;this.passcounts = 0;
 		this.loadRommInfo();
 	}
 
@@ -135,11 +149,11 @@ export class RoomPage implements OnInit {
 			if (val) {
 				this.dwgInfo = val[0];
 				this.dwgFactor = this.dwgInfo.width / this.stage.offsetWidth;
-				let src = 'data:image/jpeg;base64,' + this.dwgInfo.src;  //data:image/jpeg;base64,
-				console.log(src);
+				let src = 'data:image/jpeg;base64,' + this.dwgInfo.src;  //data:image/jpeg;base64,				
 				this.stage.style.backgroundImage = 'url(' + src + ')';//this.stage.style.backgroundImage = 'url(' + this.dwgInfo.src + ')'; 
 				this.initBaseDB.getissuelist(this.projid, this.batchid, this.roomid, this.type).then(res => {
-					this.issues = res;
+					this.issues = res[0];
+					this.readycounts = res[1];this.forfixcounts = res[2];this.fixedcounts = res[3];this.passcounts = res[4];
 					this.issues.forEach(issue => {
 						console.log(issue);
 						this.drawIssue(issue.id, issue);
