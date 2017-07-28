@@ -80,8 +80,8 @@ export class ReceiptPage {
                 if (val.rows.item(0).KeyRetentionStatus > 0)
                     this.receiptInfo.keyReserve = val.rows.item(0).KeyRetentionStatus;
                 let dt: Date;
-                if (val.rows.item(0).Transdate) {
-                    dt = new Date(val.rows.item(0).Transdate);
+                if (val.rows.item(0).TransDate) {
+                    dt = new Date(val.rows.item(0).TransDate);
                     console.log(dt);
                     console.log(dt.toLocaleDateString());
                 } else {
@@ -89,7 +89,8 @@ export class ReceiptPage {
                     console.log(dt.toLocaleDateString() + "  " + dt.toLocaleTimeString());
                 }
 
-                this.receiptInfo.dlvrDate = dt.toLocaleDateString() + "  " + dt.toLocaleTimeString();
+                this.receiptInfo.dlvrDate = dt.toLocaleString();
+                console.log(this.receiptInfo.dlvrDate);
                 this.receiptInfo.additionNote = val.rows.item(0).Remark;
                 this.initBaseDB.getimagedata(this.receiptInfo.projId, val.rows.item(0).ImgSign).then(v => {
                     if (v && v.rows.length > 0) {

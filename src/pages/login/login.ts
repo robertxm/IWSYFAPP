@@ -17,8 +17,7 @@ import { ChangePWPage } from '../changepw/changepw';
 export class LoginPage {
   imgheight: any;
   userid: string;
-  password: string;
-
+  password: string; 
   constructor(public navCtrl: NavController, public alertCtrl: AlertController, public localStorage: LocalStorage, public initBaseDB: initBaseDB,
     public nativeservice: NativeService, private httpService: HttpService) {
     console.log("login start app");
@@ -106,7 +105,6 @@ export class LoginPage {
         })
       }
     })
-
   }
 
   ionViewWillLeave() {

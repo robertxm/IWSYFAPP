@@ -5,6 +5,7 @@ import { initBaseDB } from '../../providers/initBaseDB';
 import { NativeService } from '../../providers/nativeservice';
 import { LocalStorage } from '../../providers/local-storage';
 import { Dialogs } from '@ionic-native/dialogs';
+import { Clipboard } from '@ionic-native/clipboard';
 
 @IonicPage()
 @Component({
@@ -31,8 +32,10 @@ export class BuilderPage {
   forfixcounts: number = 0;
   fixedcounts: number = 0;
   returncounts: number = 0;
+  showflag: boolean = false;
+  exportissueurl: string = "";
   constructor(public navCtrl: NavController, public navParams: NavParams, public actionSheetCtrl: ActionSheetController, public dialogs: Dialogs,
-    public initBaseDB: initBaseDB, public nativeservice: NativeService, public localStorage: LocalStorage) {
+    public initBaseDB: initBaseDB, public nativeservice: NativeService, public localStorage: LocalStorage, private clipboard: Clipboard) {
     this.localStorage.getItem('curuser').then(val => {
       this.userid = val.userid;
       this.username = val.username;
@@ -79,12 +82,66 @@ export class BuilderPage {
   }
 
   exportIssues() {
-    var s = "";
-    for (let issue of this.getSeletedIssues()) {
-      if (s != "") s += ";";
-      s += issue["issueId"];
+    if (this.existsSeletedIssues()) {
+      console.log(this.selectedTab);
+      let issjson = [];
+      let iss1 = [], iss2 = [], iss3 = [], iss4 = [];
+      for (let issue of this.getIssues(this.selectedTab)) {
+        console.log(issue['type']);
+        if (issue['selected']) {
+          if (issue['type'] == 1) {
+            iss1.push({ Id: issue['id'] });
+          } else if (issue['type'] == 2) {
+            iss2.push({ Id: issue['id'] });
+          } else if (issue['type'] == 3) {
+            iss3.push({ Id: issue['id'] });
+          } else if (issue['type'] == 4) {
+            iss4.push({ Id: issue['id'] });
+          }
+        }
+      }
+      console.log(iss1);
+      console.log(iss2);
+      console.log(iss3);
+      console.log(iss4);
+      if (iss1.length > 0) {
+        issjson.push({ TableName: "PreCheckIssues", data: iss1 });
+      }
+      if (iss2.length > 0) {
+        issjson.push({ TableName: "OpenCheckIssues", data: iss2 });
+      }
+      if (iss3.length > 0) {
+        issjson.push({ TableName: "FormalCheckIssues", data: iss3 });
+      }
+      if (iss4.length > 0) {
+        issjson.push({ TableName: "ServiceCheckIssues", data: iss4 });
+      }
+      console.log(issjson);
+      console.log(JSON.stringify(issjson));
+      this.initBaseDB.exportIssue(this.token, JSON.stringify(issjson)).then((val: any) => {
+        console.log(val);
+        this.exportissueurl = val;
+        if (this.exportissueurl) {
+          this.showflag = true;
+        }
+      })
+    } else {
+      alert("请先选择要处理的问题项.");
     }
-    alert(s);
+  }
+
+  copytoclipboard() {
+    this.clipboard.copy(this.exportissueurl);
+
+    this.clipboard.paste().then(
+      (resolve: string) => {
+        this.showflag = false;
+        this.nativeservice.showToast("复制成功.");        
+      },
+      (reject: string) => {
+        alert('Error: ' + reject);
+      }
+    );
   }
 
   showDetail(issue) {

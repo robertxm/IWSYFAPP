@@ -31,7 +31,7 @@
         <span style="width:170px;" item-right><img style="background-color:white;height:40px;" src="{{receiptInfo.ownerSign}}" /></span>
       </button>
       <!--<ion-item><ion-label fixed>交付日期</ion-label><ion-input type="text" value="{{receiptInfo.dlvrDate}}"></ion-input></ion-item>-->
-      <ion-item *ngIf="readonly"><ion-label fixed>交付日期</ion-label>{{receiptInfo.dlvrDate}}</ion-item>
+      <ion-item *ngIf="readonly"><ion-label>交付日期&nbsp;&nbsp;&nbsp;&nbsp;{{receiptInfo.dlvrDate}}</ion-label></ion-item>
       <ion-item  *ngFor="let item of satDim" ><ion-label>{{item.dim}}</ion-label>
         <ion-icon name="{{i<item.score?'star':'star-outline'}}" item-right color="danger" *ngFor="let s of getStars(5); let i = index;"
                   (click)="starClick(item,i+1)" on-touch="starClick(item,i+1)"

@@ -65,7 +65,7 @@
       </ion-select>
     </ion-item>
     <ion-item>
-      <ion-toggle [(checked)]="fixedchecked" (ionChange)="fixedchange($event)"></ion-toggle>
+      <ion-toggle [(ngModel)]="fixedchecked" (ionChange)="fixedchange($event)"></ion-toggle>
       <ion-label>
         现场整改通过
       </ion-label>

@@ -70,9 +70,14 @@
         db.transaction(function(tx) {
             try {
                 //Clean SQL + split into statements
-                var totalCount, currentCount, statements = sql.replace(/[\n\r]/g,"") // strip out line endings
+                var totalCount, currentCount;
+
+                var statements = sql
                     .replace(/(?:\/\*(?:[\s\S]*?)\*\/)|(?:([\s;])+\/\/(?:.*)$)/gm,"") // strip out comments
                     .match(statementRegEx);
+
+                if(statements === null || (Array.isArray && !Array.isArray(statements)))
+                    statements = [];
 
                 function handleError(e){
                     if(opts.errorFn){
@@ -102,7 +107,7 @@
                 }
 
                 // Strip empty statements
-                for(var i=0; i<statements.length; i++){
+                for(var i = 0; i < statements.length; i++){
                     if(!statements[i]){
                         delete statements[i];
                     }
@@ -150,7 +155,7 @@
                                         var _values = [];
                                         for (col in dataRow) {
                                             _fields.push(sqlEscape(col));
-                                            _values.push("'" + sanitiseForSql(dataRow[col]) + "'");
+                                            _values.push(dataRow[col] === null ? "NULL" : "'" + sanitiseForSql(dataRow[col]) + "'");
                                         }
                                         exportSQL += "INSERT OR REPLACE INTO " + sqlEscape(tableName) + "(" + _fields.join(",") + ") VALUES (" + _values.join(",") + ")" + separator;
                                         statementCount++;
@@ -238,13 +243,13 @@
                             sqlStatement = "SELECT * FROM " + sqlEscape(tableName);
                         tx.executeSql(sqlStatement, [],
                             function (tx, rslt) {
-                                if (rslt.rows) {
+                                if (rslt.rows && !isReservedTable(tableName)) {
                                     json.data.inserts[tableName] = [];
                                     for (var m = 0; m < rslt.rows.length; m++) {
                                         var dataRow = rslt.rows.item(m);
                                         var _row = {};
                                         for (col in dataRow) {
-                                            _row[col] = dataRow[col];
+                                            _row[col] = dataRowToJsonData(dataRow[col]);
                                         }
                                         json.data.inserts[tableName].push(_row);
                                         statementCount++;
@@ -269,8 +274,7 @@
 
                         if (results.rows && !opts.dataOnly) {
                             json.structure = {
-                                tables:{},
-                                otherSQL:[]
+                                tables:{}
                             };
                             for (var i = 0; i < results.rows.length; i++) {
                                 var row = results.rows.item(i);
@@ -281,9 +285,12 @@
                                         if(!isReservedTable(tableName)){
                                             var tableStructure = trimWhitespace(row.sql.replace("CREATE TABLE " + sqlEscape(tableName), ""));
                                             json.structure.tables[tableName] = tableStructure.replace(/\s+/g," ");
-                                            statementCount+=2; // One for DROP, one for create
+                                            statementCount += 2; // One for DROP, one for create
                                         }
                                     }else{
+                                        if(!json.structure.otherSQL){
+                                            json.structure.otherSQL = [];
+                                        }
                                         json.structure.otherSQL.push(row.sql.replace(/\s+/g," "));
                                         statementCount++;
                                     }
@@ -354,14 +361,16 @@
             if(json.structure){
                 for(var tableName in json.structure.tables){
                     mainSql += "DROP TABLE IF EXISTS " + sqlEscape(tableName) + separator
-                    + "CREATE TABLE " + sqlEscape(tableName) + json.structure.tables[tableName] + separator;
+                        + "CREATE TABLE " + sqlEscape(tableName) + json.structure.tables[tableName] + separator;
                 }
-                for(var i=0; i<json.structure.otherSQL.length; i++){
-                    var command = json.structure.otherSQL[i];
-                    if(command.match(/CREATE INDEX/i)){
-                        createIndexSql += json.structure.otherSQL[i] + separator;
-                    }else{
-                        mainSql += json.structure.otherSQL[i] + separator;
+                if(json.structure.otherSQL){
+                    for(var i=0; i<json.structure.otherSQL.length; i++){
+                        var command = json.structure.otherSQL[i];
+                        if(command.match(/CREATE INDEX/i)){
+                            createIndexSql += json.structure.otherSQL[i] + separator;
+                        }else{
+                            mainSql += json.structure.otherSQL[i] + separator;
+                        }
                     }
                 }
             }
@@ -386,10 +395,10 @@
 
                         if(_count === 0){
                             mainSql += "INSERT OR REPLACE INTO " + sqlEscape(tableName) + " SELECT";
-                            for(var j=0; j<_fields.length; j++){
-                                if(_values[j]=='null'){
-                                    mainSql += " " + _values[j] + " AS '" + _fields[j] + "'";
-                                }else {
+                            for(var j = 0; j < _fields.length; j++){
+                                if(typeof _values[j] === "undefined" || _values[j] === null || _values[j].toLowerCase() == 'null'){
+                                    mainSql += " NULL AS '" + _fields[j] + "'";
+                                }else{
                                     mainSql += " '" + _values[j] + "' AS '" + _fields[j] + "'";
                                 }
                                 if(j < _fields.length-1){
@@ -398,11 +407,11 @@
                             }
                         }else{
                             mainSql += " UNION SELECT ";
-                            for(var j=0; j<_values.length; j++){
-                                if(_values[j]=='null'){
-                                    mainSql += " "+_values[j];
-                                }else {
-                                    mainSql += " '"+_values[j]+"'";
+                            for(var j = 0; j < _values.length; j++){
+                                if(typeof _values[j] === "undefined" || _values[j] === null || _values[j].toLowerCase() == 'null'){
+                                    mainSql += " NULL";
+                                }else{
+                                    mainSql += " '" + _values[j] + "'";
                                 }
                                 if(j < _values.length-1){
                                     mainSql += ",";
@@ -417,12 +426,12 @@
 
             if(json.data.deletes){
                 for(var tableName in json.data.deletes){
-                    for(var i=0; i<json.data.deletes[tableName].length; i++){
+                    for(var i=0; i < json.data.deletes[tableName].length; i++){
                         var _count = 0,
                             _row = json.data.deletes[tableName][i];
                         mainSql += "DELETE FROM " + sqlEscape(tableName);
                         for(var col in _row){
-                            mainSql += (_count === 0 ? " WHERE " : " AND ") + col + "='"+sanitiseForSql(_row[col])+"'";
+                            mainSql += (_count === 0 ? " WHERE " : " AND ") + col + "='" + sanitiseForSql(_row[col]) + "'";
                             _count++;
                         }
                         mainSql += separator;
@@ -433,18 +442,20 @@
             if(json.data.updates){
                 var tableName, _row, i, _col, _count;
                 for( tableName in json.data.updates){
-                    for(i=0; i<json.data.updates[tableName].length; i++){
+                    for(i=0; i < json.data.updates[tableName].length; i++){
                         var _row = json.data.updates[tableName][i];
                         mainSql += "UPDATE " + sqlEscape(tableName);
 
                         _count = 0;
                         for(_col in _row.set){
                             mainSql += (_count === 0 ? " SET " : ", ") + _col + "='" + sanitiseForSql(_row.set[_col]) + "'";
+                            _count++;
                         }
 
                         _count = 0;
                         for(_col in _row.where){
                             mainSql += (_count === 0 ? " WHERE " : " AND ") + _col + "='" + sanitiseForSql(_row.where[_col]) + "'";
+                            _count++;
                         }
 
                         mainSql += separator;
@@ -537,6 +548,18 @@
         );
     };
 
+    /**
+     * Converts "null", "false", "true", and "undefined" fields to their properly typed null, false, true, and undefined equivalents
+     * @param {string} data - raw string from db
+     * @returns {object} boolean, null, or undefined if the original data
+     */
+    function dataRowToJsonData(data){
+        if (data === null || data === "null") return null;
+        if (data === undefined || data === "undefined") return undefined;
+        if (data === true || data === "true") return true;
+        if (data === false || data === "false") return false;
+        return data;
+    }
 
     /**
      * Trims leading and trailing whitespace from a string
@@ -544,7 +567,7 @@
      * @returns {string} trimmed string
      */
     function trimWhitespace(str){
-        return str.replace(/^\s+/,"").replace(/\s+&/,"");
+        return str.replace(/^\s+/,"").replace(/\s+$/,"");
     }
 
     /**
@@ -554,7 +577,8 @@
      * @returns {string} sanitised value
      */
     function sanitiseForSql(value){
-        return (value+"").replace(/'([^']|$)/g,"''$1");
+        if (value === null || value === undefined) { return null; }
+        return (value+"").replace(/'/g,"''");
     }
 
     /**
@@ -564,7 +588,7 @@
      */
     function sqlEscape(value){
         if(value.match(/[_-]+/)){
-            value = '`'+value+'`';
+            value = '`' + value + '`';
         }
         return value;
     }

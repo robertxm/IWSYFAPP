@@ -147,6 +147,7 @@ export class IssuePage {
 
 	itemchange() {
 		this.checkitemid = this.checkitemids[this.checkitems.indexOf(this.checkitem, 0)];
+		this.itdesc = ''; this.itemdescs = [];
 		this.initBaseDB.getcheckitemdescvend(this.projid, this.roomid, this.checkitemid).then(val => {
 			console.log(val);
 			this.itemdescs = val[0];

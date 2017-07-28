@@ -55,6 +55,7 @@ import { Dialogs } from '@ionic-native/dialogs';
 import { Toast } from '@ionic-native/toast';
 import { Contacts } from '@ionic-native/contacts';
 import { SignaturePadModule } from 'angular2-signaturepad'
+import { Clipboard } from '@ionic-native/clipboard';
 import { RoomoldPage } from '../pages/roomold/room';
 import { FlooroldPage } from '../pages/floorold/Floor';
 
@@ -163,6 +164,7 @@ import { FlooroldPage } from '../pages/floorold/Floor';
     Dialogs,
     Toast,
     Contacts,
+    Clipboard,
     {provide: ErrorHandler, useClass: IonicErrorHandler}
   ]
 })

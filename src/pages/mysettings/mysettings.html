@@ -15,7 +15,7 @@
       </ion-select>
     </ion-item>
     <ion-item>
-      <ion-toggle [(checked)]="networkchecked" (ionChange)="networkchange($event)"></ion-toggle>
+      <ion-toggle [(ngModel)]="networkchecked" (ionChange)="networkchange($event)"></ion-toggle>
       <ion-label>
         仅在wifi环境上传、下载数据
       </ion-label>

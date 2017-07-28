@@ -7,25 +7,10 @@
         "files": {}
     },
     "installed_plugins": {
-        "cordova-plugin-camera": {
-            "PACKAGE_NAME": "com.ionicframework.myapp398494"
-        },
         "cordova-plugin-console": {
             "PACKAGE_NAME": "com.ionicframework.myapp398494"
         },
-        "cordova-plugin-contacts": {
-            "PACKAGE_NAME": "com.ionicframework.myapp398494"
-        },
         "cordova-plugin-device": {
-            "PACKAGE_NAME": "com.ionicframework.myapp398494"
-        },
-        "cordova-plugin-dialogs": {
-            "PACKAGE_NAME": "com.ionicframework.myapp398494"
-        },
-        "cordova-plugin-http": {
-            "PACKAGE_NAME": "com.ionicframework.myapp398494"
-        },
-        "cordova-plugin-network-information": {
             "PACKAGE_NAME": "com.ionicframework.myapp398494"
         },
         "cordova-plugin-splashscreen": {
@@ -37,16 +22,34 @@
         "cordova-plugin-whitelist": {
             "PACKAGE_NAME": "com.ionicframework.myapp398494"
         },
+        "ionic-plugin-keyboard": {
+            "PACKAGE_NAME": "com.ionicframework.myapp398494"
+        },
+        "cordova-plugin-camera": {
+            "PACKAGE_NAME": "com.ionicframework.myapp398494"
+        },
+        "cordova-plugin-contacts": {
+            "PACKAGE_NAME": "com.ionicframework.myapp398494"
+        },
+        "cordova-plugin-dialogs": {
+            "PACKAGE_NAME": "com.ionicframework.myapp398494"
+        },
+        "cordova-plugin-http": {
+            "PACKAGE_NAME": "com.ionicframework.myapp398494"
+        },
+        "cordova-plugin-network-information": {
+            "PACKAGE_NAME": "com.ionicframework.myapp398494"
+        },
         "cordova-plugin-x-toast": {
             "PACKAGE_NAME": "com.ionicframework.myapp398494"
         },
         "cordova-sqlite-storage": {
             "PACKAGE_NAME": "com.ionicframework.myapp398494"
         },
-        "ionic-plugin-keyboard": {
+        "uk.co.workingedge.cordova.plugin.sqliteporter": {
             "PACKAGE_NAME": "com.ionicframework.myapp398494"
         },
-        "uk.co.workingedge.cordova.plugin.sqliteporter": {
+        "cordova-clipboard": {
             "PACKAGE_NAME": "com.ionicframework.myapp398494"
         }
     },

@@ -38,7 +38,7 @@
 	</table>
 </ion-header>
 <ion-content padding>
-	<div *ngIf="needupd" style="background-color:blue; text-align:center; color:white"> 你当前有数据未更新,拖动可更新.</div>
+	<div *ngIf="needupd" style="background-color:blue; text-align:center; color:white"> 你有问题未更新 下拉刷新</div>
 	<ion-refresher (ionRefresh)="doRefresh($event)">
 		<ion-refresher-content pullingIcon="arrow-dropdown" pullingText="下拉刷新..." refreshingSpinner="circles" refreshingText="开始加载......">
 		</ion-refresher-content>
@@ -72,4 +72,22 @@
 			</td>
 		</tr>
 	</table>
+
+	<div id="rightDisplay" *ngIf="showflag" class="popover-backdrop" 
+     style="position: fixed;top: 30%;left: 10%;z-index: 0; width: 80%;height: 40%; background-color:#FFCCFF;border-radius:16px;">
+     <p style="text-align:center">提示</p>     
+     <hr style="height:0.5px;border:none;border-top:1px solid #CDC1C5;" />
+     <p>系统将于1分钟内为您生成问题清单文件，文件下载地址:</p>
+     <p><a style="text-decoration: none" href="{{exportissueurl}}"><font color="#488aff">{{exportissueurl}}</font></a></p>        
+      <table style="width:100%;position:absolute; bottom:10%;">
+        <tr>
+          <td width="30%"> 
+            <td>
+              <td><button ion-button color="primary" (click)="copytoclipboard()" clear>复制链接到剪贴板</button>
+          </td>
+          <td width="30%">
+          </td>
+        </tr>        
+      </table>     
+  </div>
 </ion-content>

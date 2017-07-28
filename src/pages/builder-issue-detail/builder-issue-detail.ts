@@ -1,10 +1,10 @@
 import { Component } from '@angular/core';
-import { IonicPage, NavController, NavParams,ModalController,ActionSheetController } from 'ionic-angular';
+import { IonicPage, NavController, NavParams, ModalController, ActionSheetController } from 'ionic-angular';
 import { BuilderCloseIssue } from '../../pages/builder-close-issue/builder-close-issue';
 import { BuilderIssuePosition } from '../../pages/builder-issue-position/builder-issue-position';
 import { initBaseDB } from '../../providers/initBaseDB';
 import { ShowimgPage } from '../../pages/imageeditor/showimg';
-import { AssignreturnPage } from '../../pages/assignreturn/assignreturn'; 
+import { AssignreturnPage } from '../../pages/assignreturn/assignreturn';
 import { NativeService } from '../../providers/nativeservice';
 
 @IonicPage()
@@ -42,7 +42,7 @@ export class BuilderIssueDetail {
   // assigntoname = '黄飞鸿';
   status = 'pending';
   status_name = '待整改';
-  return_log:Array<any>;
+  return_log: Array<any>;
   // return_log = [
   //   { return_person: '吴宁', return_date: '2017-06-17 18:49', return_message: '维修后仍然有缺陷' },
   //   { return_person: '肖振宇', return_date: '2017-06-19 08:25', return_message: '维修后仍然有缺陷' },
@@ -54,17 +54,17 @@ export class BuilderIssueDetail {
   registertime: string;
   duetime: string;
   assigntime: string;
-  images:Array<any>;
-  imagesfixed:Array<any>;
-  teammembers:Array<any>;
-  constructor(public navCtrl: NavController, public navParams: NavParams, public initBaseDB: initBaseDB, private modalCtrl: ModalController, public nativeservice: NativeService,public actionSheetCtrl: ActionSheetController) {
+  images: Array<any>;
+  imagesfixed: Array<any>;
+  teammembers: Array<any>;
+  constructor(public navCtrl: NavController, public navParams: NavParams, public initBaseDB: initBaseDB, private modalCtrl: ModalController, public nativeservice: NativeService, public actionSheetCtrl: ActionSheetController) {
     this.issueid = navParams.get('Id');
     this.projid = navParams.get('projid');
     this.projname = navParams.get('projname');
     this.userid = navParams.get('userid');
     this.username = navParams.get('username');
-    this.issue = navParams.get('issue');  
-    this.teammembers = []; this.teammembers = navParams.get('teammembers');  
+    this.issue = navParams.get('issue');
+    this.teammembers = []; this.teammembers = navParams.get('teammembers');
   }
 
   loadissueinfo() {
@@ -72,7 +72,7 @@ export class BuilderIssueDetail {
     this.return_log = [];
     this.initBaseDB.getbuilderissueinfo(this.issueid, this.issue.type).then((v: any) => {
       let issuelist: any;
-      let val:any; val = v[0];
+      let val: any; val = v[0];
       issuelist = val.rows.item(0);
       console.log(JSON.stringify(val.rows.item(0)));
 
@@ -87,7 +87,7 @@ export class BuilderIssueDetail {
         dt = new Date(issuelist.AppointDate);
         this.assigntime = dt.toLocaleString();
       }
-            
+
       if (issuelist.ImgBefore1) {
         this.initBaseDB.getimagedata(this.projid, issuelist.ImgBefore1).then((v1: any) => {
           this.images.push('data:image/jpeg;base64,' + v1.rows.item(0).src);
@@ -133,12 +133,12 @@ export class BuilderIssueDetail {
           console.log('图片1加载失败' + err);
         })
       }
-
-      let log:any; log = v[1];
-      for (var i=1;i<log.rows.length;i++){
+      console.log("log:"+v[1]);
+      let log: any; log = v[1];
+      for (var i = 1; i < log.rows.length; i++) {
         console.log(JSON.stringify(log.rows.item(i)));
-        dt = new Date(log.rows.item(i).LogDate); 
-        this.return_log.push({return_person: log.rows.item(i).UserName, return_date: dt.toLocaleString(), return_message: log.rows.item(i).ReturnReason})
+        dt = new Date(log.rows.item(i).LogDate);
+        this.return_log.push({ return_person: log.rows.item(i).UserName, return_date: dt.toLocaleString(), return_message: log.rows.item(i).ReturnReason })
       }
     })
   }
@@ -148,26 +148,26 @@ export class BuilderIssueDetail {
     this.loadissueinfo();
   }
   //results.push({ reason: result, img: this.imagesafter,fixeddesc:this.fixeddesc });
-  fixedclick() {    
+  fixedclick() {
     const modal = this.modalCtrl.create(BuilderCloseIssue, {
-			username: this.username, images:this.images, overdays:this.issue.overdays
-		});
-		modal.onDidDismiss((result:any) => {
-			console.log(result);
-			if (result) {
-				console.log('if');
-				this.initBaseDB.updateFixedCompleteSingle(this.projid,this.issueid,result[0].img,result[0].fixeddesc,result[0].reason,this.username,this.userid).then(v=>{
+      username: this.username, images: this.images, overdays: this.issue.overdays
+    });
+    modal.onDidDismiss((result: any) => {
+      console.log(result);
+      if (result) {
+        console.log('if');
+        this.initBaseDB.updateFixedCompleteSingle(this.projid, this.issueid, result[0].img, result[0].fixeddesc, result[0].reason, this.username, this.userid).then(v => {
           this.nativeservice.showToast('完成整改成功.');
           this.navCtrl.pop();
         })
-			}
-		});
-		modal.present();
+      }
+    });
+    modal.present();
   }
 
-  assignchange(){
+  assignchange() {
     console.log('assignchange');
-     this.presentActionSheet();
+    this.presentActionSheet();
   }
 
   presentActionSheet() {
@@ -184,35 +184,35 @@ export class BuilderIssueDetail {
     actionSheet.present();
   }
 
-  assignto(staff: any) {    
-    this.initBaseDB.updateResponsible(this.projid, "'" + this.issueid + "'", staff,this.username,this.userid).then(v => {
+  assignto(staff: any) {
+    this.initBaseDB.updateResponsible(this.projid, "'" + this.issueid + "'", staff, this.username, this.userid).then(v => {
       this.nativeservice.showToast('变更负责人成功.');
       this.navCtrl.pop();
-    })    
-  }  
+    })
+  }
 
   positionview() {
-    this.navCtrl.push(BuilderIssuePosition, {"issueid":this.issueid,"type":this.issue.type});
+    this.navCtrl.push(BuilderIssuePosition, { "issueid": this.issueid, "type": this.issue.type });
   }
 
   returnassign() {
     const modal = this.modalCtrl.create(AssignreturnPage, {
-		});
-		modal.onDidDismiss(result => {
-			if (result) {
-				console.log(result);        
-        this.initBaseDB.returnassign(this.projid,this.issueid,this.username,this.userid,result,this.issue.type).then(val=>{
+    });
+    modal.onDidDismiss(result => {
+      if (result) {
+        console.log(result);
+        this.initBaseDB.returnassign(this.projid, this.issueid, this.username, this.userid, result, this.issue.type).then(val => {
           this.nativeservice.showToast('退回成功.');
           this.navCtrl.pop();
         })
-			}
-		});
-		modal.present();
+      }
+    });
+    modal.present();
   }
 
   //点击图片放大
-	showBigImage(imageName) {  //传递一个参数（图片的URl）
-		this.navCtrl.push(ShowimgPage, { imgdata: imageName });
-	};
+  showBigImage(imageName) {  //传递一个参数（图片的URl）
+    this.navCtrl.push(ShowimgPage, { imgdata: imageName });
+  };
 
 }

@@ -469,6 +469,16 @@ export class initBaseDB {
                 let sql = "delete from buildingversion where not exists (select tb.ProjId from tmpbuildingversion tb where tb.projid = buildingversion.projid and tb.batchid = buildingversion.batchid and tb.buildingid = buildingversion.buildingid ) and projid = '" + projid + "'";
                 console.log(sql);
                 return this.db.executeSql(sql, []);
+              }).then((v51) => {
+                console.log("v51");
+                return this.db.executeSql("select * from buildingversion", []).then(v => {
+                  if (v) {
+                    for (let i = 0; i < v.rows.length; i++) {
+                      console.log(JSON.stringify(v.rows.item(i)));
+                    }
+                  }
+                  else { console.log("无记录"); }
+                })
               }).then((v4) => {
                 console.log("v4");
                 return this.db.executeSql("update buildingversion set needupd = 1 where exists (select * from tmpbuildingversion where buildingversion.projid = tmpbuildingversion.projid and buildingversion.buildingid = tmpbuildingversion.buildingid and buildingversion.batchid = tmpbuildingversion.batchid and buildingversion.versionid != tmpbuildingversion.versionid)", []);
@@ -549,7 +559,7 @@ export class initBaseDB {
             resolve(promise.then((v1) => {
               return this.initBaseTable("FormalCheckBatchRooms", "ID,BatchId,RoomId,ProjId,Buildingid"); //////////////核对
             }).then((v2) => {
-              return this.initBaseTable("Rooms", "ProjId,Buildingid,FloorId,Id,Name,Unit,ApartmentId,SortCode");
+              return this.initBaseTable("Rooms", "ProjId,Buildingid,FloorId,Id,Name,Unit,ApartmentId,SortCode integer default 0");
             }).then((v3) => {
               return this.initBaseTable("Vendprojcheckscopes", "VendId,ProjId,ProjCheckItemId,RoomId,BuildingId");
             }).then((v5) => {
@@ -1833,11 +1843,9 @@ export class initBaseDB {
               console.log("4" + status);
               bth++;
               dt = new Date(v2.rows.item(i).ReturnDate);
-              returned.push({ selected: false, type: v2.rows.item(i).type, id: v2.rows.item(i).Id, batchname: v2.rows.item(i).BatchName, floorname: v2.rows.item(i).FloorName, roomname: v2.rows.item(i).RoomName, buildingname: v2.rows.item(i).BuildingName, status: status, position: v2.rows.item(i).PositionName, checkitem: v2.rows.item(i).CheckItemName, issueid: v2.rows.item(i).IssueId, IssueDesc: v2.rows.item(i).IssueDesc, ResponsibleName: v2.rows.item(i).ResponsibleName, datestr: "已退回", duedate: dt.toLocaleString(), overdays: days, returntimes: v2.rows.item(i).ReturnNum });
+              returned.push({ selected: false, type: v2.rows.item(i).type, id: v2.rows.item(i).Id, batchname: v2.rows.item(i).BatchName, floorname: v2.rows.item(i).FloorName, roomname: v2.rows.item(i).RoomName, buildingname: v2.rows.item(i).BuildingName, status: status, position: v2.rows.item(i).PositionName, checkitem: v2.rows.item(i).CheckItemName, issueid: v2.rows.item(i).IssueId, IssueDesc: v2.rows.item(i).IssueDesc, ResponsibleName: v2.rows.item(i).ResponsibleName, datestr: "已退回", date: dt.toLocaleString(), overdays: days, returntimes: v2.rows.item(i).ReturnNum });
             }
-            console.log(v2.rows.item(i).ReturnNum);
-            console.log(dt.toLocaleDateString());
-            console.log(dt.toLocaleString());
+            
             console.log(dpd + ";" + dzg + ";" + yzg + ";" + bth);
           }
           console.log(forass); console.log(dpd + ";" + dzg + ";" + yzg + ";" + bth);
@@ -1876,6 +1884,7 @@ export class initBaseDB {
         return this.db.executeSql(sql, []);
       }).then((v3: any) => {
         ret.push(v3);
+        console.log(ret);
         return ret;
       }).catch(err => {
         this.warn('问题加载失败:' + err);
@@ -2085,6 +2094,24 @@ export class initBaseDB {
       }).catch(err => {
         this.warn('退回指派失败:' + err);
         throw '退回指派失败';
+      }))
+    })
+  }
+
+  exportIssue(token,JsonStr): Promise<any> {    
+    return new Promise((resolve) => {
+      let promise = new Promise((resolve) => {
+        resolve(100);
+      });
+      console.log("exportIssue");
+      resolve(promise.then((v1) => {        
+        return this.httpService.get(APP_SERVE_URL + "/IssueExportExcel", { Token: token, jsonStr: JsonStr });        
+      }).then((v2:any) => { 
+        console.log(v2);
+        return APP_SERVE_URL.replace('/api','') + v2[0][2][0];
+      }).catch(err => {
+        this.warn('问题导出失败:' + err);
+        throw '问题导出失败';
       }))
     })
   }
