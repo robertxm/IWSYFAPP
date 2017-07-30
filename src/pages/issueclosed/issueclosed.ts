@@ -23,7 +23,7 @@ export class IssueclosedPage {
 
   cameraclick() {
 		const options: CameraOptions = {
-			quality: 85,
+			quality: 90,
 			destinationType: this.camera.DestinationType.DATA_URL,
 			encodingType: this.camera.EncodingType.JPEG,
 			mediaType: this.camera.MediaType.PICTURE

@@ -1,8 +1,7 @@
 import { Component } from '@angular/core';
-import { IonicPage, NavController, NavParams } from 'ionic-angular';
+import { NavController, NavParams } from 'ionic-angular';
 import { initBaseDB } from '../../providers/initBaseDB';
 
-@IonicPage()
 @Component({
 	selector: 'page-builder-issue-position',
 	templateUrl: 'builder-issue-position.html',

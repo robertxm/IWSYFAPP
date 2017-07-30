@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { IonicPage, NavController, NavParams, ActionSheetController } from 'ionic-angular';
+import { NavController, NavParams, ActionSheetController } from 'ionic-angular';
 import { BuilderIssueDetail } from "../builder-issue-detail/builder-issue-detail";
 import { initBaseDB } from '../../providers/initBaseDB';
 import { NativeService } from '../../providers/nativeservice';
@@ -7,7 +7,6 @@ import { LocalStorage } from '../../providers/local-storage';
 import { Dialogs } from '@ionic-native/dialogs';
 import { Clipboard } from '@ionic-native/clipboard';
 
-@IonicPage()
 @Component({
   selector: 'page-builder',
   templateUrl: 'builder.html',

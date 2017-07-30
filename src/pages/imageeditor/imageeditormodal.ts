@@ -118,7 +118,7 @@ export class ImageEditorModal {
         this.context.fillStyle = "#ffffff";
         this.context.fillText(text, fleft, ftop);//文本元素在画布居中方式
         this.context.save();
-        let newsrc = this.canvas.toDataURL('image/jpeg', 0.78);   //nativeElement   
+        let newsrc = this.canvas.toDataURL('image/jpeg', 0.90);   //nativeElement   
         this.viewCtrl.dismiss(newsrc);//'data:image/jpeg;base64,' + imageData);
     }
 

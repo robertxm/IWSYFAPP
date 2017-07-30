@@ -23,7 +23,6 @@ import { PreinspectionPage } from '../pages/preinspection/preinspection';
 import { MaintenancePage } from '../pages/maintenance/maintenance';
 import { HttpService } from '../providers/HttpService';
 import { initBaseDB } from '../providers/initBaseDB';
-//import { ImgeditorPage } from '../pages/imageeditor/imgeditor';
 import { ShowimgPage } from '../pages/imageeditor/showimg';
 import {ChangePWPage} from '../pages/changepw/changepw';
 import { MyPage } from '../pages/mypage/mypage';
@@ -56,8 +55,6 @@ import { Toast } from '@ionic-native/toast';
 import { Contacts } from '@ionic-native/contacts';
 import { SignaturePadModule } from 'angular2-signaturepad'
 import { Clipboard } from '@ionic-native/clipboard';
-import { RoomoldPage } from '../pages/roomold/room';
-import { FlooroldPage } from '../pages/floorold/Floor';
 
 @NgModule({
   declarations: [
@@ -87,8 +84,6 @@ import { FlooroldPage } from '../pages/floorold/Floor';
     ReceiptPage,
     RejectPage,    
     Signature,
-    RoomoldPage,
-    FlooroldPage,
     IssuereturnPage,
     IssueclosedPage,
     BuilderPage,
@@ -137,8 +132,6 @@ import { FlooroldPage } from '../pages/floorold/Floor';
       ReceiptPage,
     RejectPage,    
     Signature,
-    RoomoldPage,
-    FlooroldPage,
     IssuereturnPage,
     IssueclosedPage,
     BuilderPage,

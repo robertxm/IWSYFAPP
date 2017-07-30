@@ -1,12 +1,11 @@
 import { Component } from '@angular/core';
-import { IonicPage, NavController, NavParams, ModalController, ViewController } from 'ionic-angular';
+import { NavController, NavParams, ModalController, ViewController } from 'ionic-angular';
 import { AlertController } from 'ionic-angular';
 import { Camera, CameraOptions } from '@ionic-native/camera';
 import { NativeService } from "../../providers/nativeservice";
 import { ShowimgPage } from '../../pages/imageeditor/showimg';
 import { ImageEditorModal } from '../../pages/imageeditor/imageeditormodal';
 
-@IonicPage()
 @Component({
 	selector: 'page-builder-close-issue',
 	templateUrl: 'builder-close-issue.html',

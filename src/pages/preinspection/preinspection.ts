@@ -5,7 +5,6 @@ import { FloorPage } from '../floor/Floor';
 import { LocalStorage } from '../../providers/local-storage';
 import { initBaseDB } from '../../providers/initBaseDB';
 import { NativeService } from '../../providers/nativeservice';
-import { FlooroldPage } from '../floorold/Floor';
 
 @Component({
   selector: 'page-preinspection',
@@ -24,7 +23,7 @@ export class PreinspectionPage {
   }
 
   itemSelected(item: string) {
-    this.navCtrl.push(FlooroldPage, { "buildingid": item });    
+    this.navCtrl.push(FloorPage, { "buildingid": item });    
   }
 
   resetclick() {

@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { IonicPage, NavController, NavParams, ModalController, ActionSheetController } from 'ionic-angular';
+import { NavController, NavParams, ModalController, ActionSheetController } from 'ionic-angular';
 import { BuilderCloseIssue } from '../../pages/builder-close-issue/builder-close-issue';
 import { BuilderIssuePosition } from '../../pages/builder-issue-position/builder-issue-position';
 import { initBaseDB } from '../../providers/initBaseDB';
@@ -7,7 +7,6 @@ import { ShowimgPage } from '../../pages/imageeditor/showimg';
 import { AssignreturnPage } from '../../pages/assignreturn/assignreturn';
 import { NativeService } from '../../providers/nativeservice';
 
-@IonicPage()
 @Component({
   selector: 'page-builder-issue-detail',
   templateUrl: 'builder-issue-detail.html',

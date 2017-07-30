@@ -29,6 +29,20 @@
       <button ion-button block (click)="loginclick()" style="height:4em">登陆</button>
     </ion-item>
   </ion-list>
+
+  <ion-item>
+      <ion-label left>整改前照片</ion-label>
+      <ion-thumbnail item-right *ngFor="let item of images" style="margin:5px;min-width:50px;min-height:50px">
+        <img [src]="item" (click)="showBigImage(item)" style="width:50px; height:50px"/>
+      </ion-thumbnail>
+    </ion-item>
+
+    <ion-item>
+      <ion-label left>整改前照片</ion-label>
+      <ion-thumbnail item-right *ngFor="let item of images" style="margin:5px;min-width:50px;min-height:50px">
+        <img [src]="item" (click)="showBigImage(item)" style="width:50px; height:50px"/>
+      </ion-thumbnail>
+    </ion-item>
     <!--<ion-item>
       <ion-label fixed>整改前照片</ion-label>
       <ion-thumbnail item-right  style="margin:5px;min-width:50px;min-height:50px">

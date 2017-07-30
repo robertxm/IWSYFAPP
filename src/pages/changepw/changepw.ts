@@ -28,12 +28,12 @@ export class ChangePWPage {
       this.token = val.token;
       this.vendrole = val.vendrole;
     })
-    let elements = document.querySelectorAll(".tabbar");
-    if (elements != null) {
-      Object.keys(elements).map((key) => {
-        elements[key].style.display = 'none';
-      });
-    }
+    // let elements = document.querySelectorAll(".tabbar");
+    // if (elements != null) {
+    //   Object.keys(elements).map((key) => {
+    //     elements[key].style.display = 'none';
+    //   });
+    // }
   }
 
   changeclick() {
@@ -54,12 +54,12 @@ export class ChangePWPage {
   }
 
     ionViewWillLeave() {
-      let elements = document.querySelectorAll(".tabbar");
-      if (elements != null) {
-        Object.keys(elements).map((key) => {
-          elements[key].style.display = 'flex';
-        });
-      }
+      // let elements = document.querySelectorAll(".tabbar");
+      // if (elements != null) {
+      //   Object.keys(elements).map((key) => {
+      //     elements[key].style.display = 'flex';
+      //   });
+      // }
     }
 
     ionViewCanLeave(): boolean {
